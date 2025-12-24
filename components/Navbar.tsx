@@ -7,11 +7,12 @@ export default function Navbar(){
     const [mobileMenuOpen,setMobileMenuOpen] = useState(false)
 
     const navLinks = [ 
+        {name : "Dashboard",href : "/dashboard"},
         {name : "SQL 50",href : "/sql50"},
         {name : "SQL 75",href : "/sql75"},
-        {name : "Dashboard",href : "/dashboard"},
-        {name : "Problems",href : "/problems"},
-
+        {name : "Joins",href : "/joins"},
+        {name : "Self Query",href : "/selfquery"},
+        {name : "Editor",href : "/compiler"},
     ];
 
     return (
@@ -40,11 +41,11 @@ export default function Navbar(){
           <div className="px-4 py-1.5 bg-[#111] border border-[#262626] rounded-xl text-xs font-bold text-[#C6FE1E]">
             1,250 XP
           </div>
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#C6FE1E] to-[#00E0FF] p-[1.5px] cursor-pointer">
+          <Link href="/profile" className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#C6FE1E] to-[#00E0FF] p-[1.5px] cursor-pointer hover:scale-105 transition-transform">
             <div className="w-full h-full rounded-[14px] bg-[#050505] flex items-center justify-center text-xs font-bold">
               JD
             </div>
-          </div>
+          </Link>
         </div>
                     <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

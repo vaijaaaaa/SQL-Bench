@@ -145,3 +145,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Code editor styling */
+textarea, code, pre {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
