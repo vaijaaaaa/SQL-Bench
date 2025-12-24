@@ -15,9 +15,8 @@ export default function Navbar(){
     ];
 
     return (
-        <nav className="sticky top-0 z-50 h-16 border-b border-[#262626] bg-[#050505] backdrop-blur-md">
-            <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-
+    <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-7xl">
+      <div className="h-16 px-6 flex items-center justify-between bg-[#0A0A0A]/40 backdrop-blur-xl border border-[#262626]/50 rounded-2xl shadow-lg">
                 <Link href = "/" className="flex items-center gap-3 group">
                 <div  className="w-9 h-9 rounded-xl bg-[#C6FE1E] flex items-center justify-center text-black transition-transform group-hover:scale-110">
                      <Zap size={20} fill="currentColor" />
