@@ -1,4 +1,4 @@
-import { executeSQLQuery } from "./sql-executor";
+import { executeSQLQuery } from './sql-executor';
 
 interface TestCase {
   id: string;

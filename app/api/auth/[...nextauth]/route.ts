@@ -108,19 +108,20 @@ export const authOptions: AuthOptions = {
     },
     async jwt({ token, user, account }) {
       if (user) {
+        // Store the database user ID, not the provider ID
         token.id = user.id
       }
       return token
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string
-  
+      if (session.user && token.id) {
+        // Fetch the actual database user
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string }
         })
         
         if (dbUser) {
+          session.user.id = dbUser.id
           session.user.name = dbUser.name
           session.user.email = dbUser.email!
           session.user.image = dbUser.image
