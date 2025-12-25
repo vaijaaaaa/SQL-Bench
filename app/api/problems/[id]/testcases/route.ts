@@ -2,6 +2,33 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 
+export async function GET(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const problemId = params.id;
+
+    const testCases = await prisma.testCase.findMany({
+      where: { problemId },
+      select: {
+        id: true,
+        input: true,
+        expected: true,
+        isHidden: true,
+      },
+    });
+
+    return NextResponse.json(testCases);
+  } catch (error: any) {
+    console.error('Fetch test cases error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch test cases' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }

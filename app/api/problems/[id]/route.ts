@@ -1,71 +1,43 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from '@/lib/prisma';
-import { Param } from "@prisma/client/runtime/library";
-
 
 export async function GET(request: Request,
-  { params }: { params: { id: string } }){
+  { params }: { params: Promise<{ id: string }> }){
         try {
-            const problemId = params.id;
+            const { id: problemId } = await params;
 
-             const problem = await prisma.problem.findUnique({
-      where: { id: problemId },
-      include: {
-        testCases: {
-          select: {
-            id: true,
-            input: true,
-            isHidden: true,
-            expected: true, // Always show expected for logged-in users
-          },
-        },
-      },
-    });
+            const problem = await prisma.problem.findUnique({
+                where: { id: problemId },
+                select: {
+                    id: true,
+                    title: true,
+                    description: true,
+                    difficulty: true,
+                    category: true,
+                    schema: true,
+                    sampleData: true,
+                    solution: true,
+                    slug: true,
+                    createdAt: true,
+                    _count: {
+                        select: { testCases: true }
+                    }
+                },
+            });
 
+            if(!problem){
+                return NextResponse.json(
+                    {error : 'Problem not found'},
+                    {status : 404}
+                );
+            }
 
-        if(!problem){
-            return NextResponse.json(
-                {error : 'Problem not found'},
-                {status : 404}
-            );
-        }
-
-
-        const session = await getServerSession(authOptions);
-
-        let userProgress = null;
-        if(session?.user?.email){
-            const user = await prisma.user.findUnique({
-                where : {email : session.user.email},
-            })
-            if (user) {
-        userProgress = await prisma.userProgress.findUnique({
-          where: {
-            userId_problemId: {
-              userId: user.id,
-              problemId: problemId,
-            },
-          },
-        });
-      }
-        }
-
-
-        return NextResponse.json({
-            ...problem,
-            userProgress,
-        })
-
-
-
-
+            return NextResponse.json(problem);
 
         } catch (error : any) {
-            console.error('Get problem error :',error);
+            console.error('Get problem error:', error.message || error);
             return NextResponse.json(
-                {error:'Failed to fetch problem'},
+                {error:'Failed to fetch problem', details: error.message},
                 {status : 500}
             )
         }
@@ -73,10 +45,10 @@ export async function GET(request: Request,
 
 export async function PUT(
     request : Request,
-    {params}:{params : {id : string}}
+    {params}:{params : Promise<{id : string}>}
 ){
     try {
-        const problemId = params.id;
+        const { id: problemId } = await params;
 
         const body = await request.json();
           const {
@@ -123,11 +95,10 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
-    const problemId = params.id;
+    const { id: problemId } = await params;
 
     await prisma.problem.delete({
       where: { id: problemId },

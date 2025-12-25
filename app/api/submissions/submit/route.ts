@@ -3,33 +3,47 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import { submissionQueue } from '@/lib/queue/submission-queue';
+import { executeSQLQuery } from '@/lib/sql-executor';
 
 export async function POST(request: Request) {
   try {
 
     const session = await getServerSession(authOptions);
     
-    if (!session || !session.user) {
+    if (!session || !session.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const body = await request.json();
-    const { problemId, query } = body;
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email }
+    });
 
-
-    if (!problemId || !query) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Problem ID and query are required' },
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const body = await request.json();
+    const { problemId, code, isSubmission } = body;
+
+
+    if (!problemId || !code) {
+      return NextResponse.json(
+        { error: 'Problem ID and code are required' },
         { status: 400 }
       );
     }
 
   
     const problem = await prisma.problem.findUnique({
-      where: { id: problemId }
+      where: { id: problemId },
+      include: { testCases: true }
     });
 
     if (!problem) {
@@ -39,32 +53,94 @@ export async function POST(request: Request) {
       );
     }
 
-    const submission = await prisma.submission.create({
-      data: {
-        userId: session.user.id,
-        problemId,
-        query,
-        isCorrect: false, 
+    // Execute the query
+    try {
+      const execResult = await executeSQLQuery(code, problem.schema, problem.sampleData);
+      
+      if (!execResult.success) {
+        return NextResponse.json({
+          success: false,
+          error: execResult.error
+        });
       }
-    });
+      
+      if (!isSubmission) {
+        // Just run the query, don't test
+        return NextResponse.json({
+          success: true,
+          rows: execResult.rows
+        });
+      }
 
-  
-    await submissionQueue.add({
-      submissionId: submission.id,
-      userId: session.user.id,
-      problemId,
-      query,
-    });
+      // Test against test cases
+      const testResults = problem.testCases.map((testCase) => {
+        try {
+          const expected = JSON.parse(testCase.expected);
+          const passed = JSON.stringify(execResult.rows) === JSON.stringify(expected);
+          return {
+            id: testCase.id,
+            passed,
+            error: passed ? null : `Expected different results`
+          };
+        } catch (e) {
+          return {
+            id: testCase.id,
+            passed: false,
+            error: 'Test case parsing error'
+          };
+        }
+      });
 
-    return NextResponse.json({
-      message: 'Submission received',
-      submissionId: submission.id,
-    }, { status: 202 });
+      const allPassed = testResults.every(t => t.passed);
 
+      // Create submission record
+      const submission = await prisma.submission.create({
+        data: {
+          userId: user.id,
+          problemId,
+          query: code,
+          isCorrect: allPassed, 
+        }
+      });
+
+      // Update user progress
+      if (allPassed) {
+        await prisma.userProgress.upsert({
+          where: {
+            userId_problemId: {
+              userId: user.id,
+              problemId
+            }
+          },
+          create: {
+            userId: user.id,
+            problemId,
+            status: 'SOLVED'
+          },
+          update: {
+            status: 'SOLVED'
+          }
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        rows: execResult.rows,
+        testResults,
+        submissionId: submission.id
+      });
+
+    } catch (execError: any) {
+      return NextResponse.json({
+        success: false,
+        error: execError.message || 'Query execution failed',
+        testResults: []
+      });
+    }
   } catch (error: any) {
     console.error('Submission error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Submission failed: ' + error.message },
       { status: 500 }
     );
   }
