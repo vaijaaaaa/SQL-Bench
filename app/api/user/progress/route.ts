@@ -16,6 +16,7 @@ export async function GET(request: Request) {
       );
     }
 
+ 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -27,27 +28,39 @@ export async function GET(request: Request) {
       );
     }
 
-    
+   
     const { searchParams } = new URL(request.url);
-    const problemId = searchParams.get('problemId');     
-    const page = parseInt(searchParams.get('page') || '1'); 
-    const limit = parseInt(searchParams.get('limit') || '10'); 
+    const problemId = searchParams.get('problemId'); 
 
- 
-    const where: any = { userId: user.id }; 
+   
     if (problemId) {
-      where.problemId = problemId; 
+      const progress = await prisma.userProgress.findUnique({
+        where: {
+          userId_problemId: {
+            userId: user.id,
+            problemId: problemId,
+          },
+        },
+        include: {
+          problem: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              difficulty: true,
+              category: true,
+            },
+          },
+        },
+      });
+
+   
+      return NextResponse.json(progress || null);
     }
 
 
-    const skip = (page - 1) * limit;
-
-    const total = await prisma.submission.count({ where });
-
-    const submissions = await prisma.submission.findMany({
-      where,
-      skip,
-      take: limit,
+    const allProgress = await prisma.userProgress.findMany({
+      where: { userId: user.id },
       include: {
         problem: {
           select: {
@@ -55,27 +68,20 @@ export async function GET(request: Request) {
             title: true,
             slug: true,
             difficulty: true,
+            category: true,
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
     });
 
-  
-    return NextResponse.json({
-      data: submissions,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    });
+    
+    return NextResponse.json(allProgress);
 
   } catch (error: any) {
-    console.error('Get submissions error:', error);
+    console.error('Get progress error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch submissions' },
+      { error: 'Failed to fetch progress' },
       { status: 500 }
     );
   }
