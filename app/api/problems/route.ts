@@ -90,7 +90,7 @@ export async function POST(request:Request){
         if(existingProblem){
             return NextResponse.json(
                 {error : 'Problem with this slug already exists'},
-                {error:400}
+                {status:400}
             );
         }
 
