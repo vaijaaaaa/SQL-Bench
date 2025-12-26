@@ -7,8 +7,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Zap } from "lucide-react"
+
+
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.innerHTML = 'nav { display: none !important; }';
+  document.head.appendChild(style);
+}
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -50,21 +57,34 @@ export default function SignUpPage() {
   }
 
   const handleGoogleSignUp = () => {
-    signIn("google", { callbackUrl: "/" })
+    signIn("google", { callbackUrl: "/dashboard" })
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Create your account
-          </CardTitle>
-          <CardDescription className="text-center">
-            Start learning SQL today
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen flex items-center justify-center bg-[#050505] p-4 relative">
+
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[#C6FE1E]/5 rounded-full blur-[120px]" />
+      
+      <div className="relative z-10 w-full max-w-md">
+
+        <div className="flex justify-center mb-8">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-12 h-12 rounded-xl bg-[#C6FE1E] flex items-center justify-center text-black transition-transform group-hover:scale-110">
+              <Zap size={24} fill="currentColor" />
+            </div>
+            <span className="text-2xl font-bold text-white tracking-tight">SQL-Bench</span>
+          </Link>
+        </div>
+
+        <div className="p-8 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl">
+          <div className="mb-6 text-center">
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Create Account
+            </h1>
+            <p className="text-[#71717A] text-sm">
+              Start your SQL learning journey today
+            </p>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -73,7 +93,7 @@ export default function SignUpPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name" className="text-[#A1A1AA] text-sm font-semibold">Name</Label>
               <Input
                 id="name"
                 type="text"
@@ -81,11 +101,12 @@ export default function SignUpPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="John Doe"
+                className="h-12 bg-[#111] border-[#262626] text-white placeholder:text-[#52525B] focus:border-[#C6FE1E]/30 focus-visible:ring-[#C6FE1E]/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
+              <Label htmlFor="email" className="text-[#A1A1AA] text-sm font-semibold">Email address</Label>
               <Input
                 id="email"
                 type="email"
@@ -93,11 +114,12 @@ export default function SignUpPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="you@example.com"
+                className="h-12 bg-[#111] border-[#262626] text-white placeholder:text-[#52525B] focus:border-[#C6FE1E]/30 focus-visible:ring-[#C6FE1E]/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-[#A1A1AA] text-sm font-semibold">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -106,34 +128,34 @@ export default function SignUpPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 placeholder="••••••••"
+                className="h-12 bg-[#111] border-[#262626] text-white placeholder:text-[#52525B] focus:border-[#C6FE1E]/30 focus-visible:ring-[#C6FE1E]/20"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[#71717A]">
                 At least 6 characters
               </p>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full h-12 bg-[#C6FE1E] hover:bg-[#b5ed0d] text-black font-bold rounded-lg transition-all disabled:opacity-50">
               {loading ? "Creating account..." : "Sign up"}
             </Button>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
+                <span className="w-full border-t border-[#262626]"></span>
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
+                <span className="bg-[#0A0A0A] px-3 text-[#71717A] font-semibold">or continue with</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              disabled={loading}
+              className="w-full h-12 bg-[#111] border-[#262626] hover:bg-[#1A1A1A] text-white font-semibold"
               onClick={handleGoogleSignUp}
             >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
                 <path
                   fill="#4285F4"
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -154,15 +176,15 @@ export default function SignUpPage() {
               Sign up with Google
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm text-[#71717A]">
               Already have an account?{" "}
-              <Link href="/signin" className="font-medium text-primary hover:underline">
+              <Link href="/signin" className="font-medium text-[#C6FE1E] hover:underline">
                 Sign in
               </Link>
             </p>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

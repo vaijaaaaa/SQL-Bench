@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import {Zap,Menu,X,User} from "lucide-react";
+import { useState, useEffect } from "react";
+import {Zap,Menu,X,LogOut} from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar(){
+    const { data: session, status } = useSession();
     const [mobileMenuOpen,setMobileMenuOpen] = useState(false)
 
     const navLinks = [ 
@@ -36,16 +38,52 @@ export default function Navbar(){
                 </div>
 
 
-                {/* user profile */}
+              
                 <div className="hidden md:flex items-center gap-4">
-          <div className="px-4 py-1.5 bg-[#111] border border-[#262626] rounded-xl text-xs font-bold text-[#C6FE1E]">
-            1,250 XP
-          </div>
-          <Link href="/profile" className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#C6FE1E] to-[#00E0FF] p-[1.5px] cursor-pointer hover:scale-105 transition-transform">
-            <div className="w-full h-full rounded-[14px] bg-[#050505] flex items-center justify-center text-xs font-bold">
-              JD
-            </div>
-          </Link>
+          {status === "loading" ? (
+            <div className="w-10 h-10 rounded-2xl bg-[#111] animate-pulse" />
+          ) : session?.user ? (
+            <>
+              <div className="px-4 py-1.5 bg-[#111] border border-[#262626] rounded-xl text-xs font-bold text-[#C6FE1E]">
+                1,250 XP
+              </div>
+              <div className="relative group">
+                <Link href="/profile" className="block">
+                  {session.user.image ? (
+                    <img 
+                      src={session.user.image} 
+                      alt={session.user.name || "User"}
+                      className="w-10 h-10 rounded-2xl hover:scale-105 transition-transform"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#C6FE1E] to-[#00E0FF] p-[1.5px] hover:scale-105 transition-transform">
+                      <div className="w-full h-full rounded-[14px] bg-[#050505] flex items-center justify-center text-xs font-bold">
+                        {session.user.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                      </div>
+                    </div>
+                  )}
+                </Link>
+              
+                <div className="absolute right-0 top-12 w-48 bg-[#0A0A0A] border border-[#262626] rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <div className="p-3 border-b border-[#262626]">
+                    <p className="text-sm font-semibold text-white truncate">{session.user.name}</p>
+                    <p className="text-xs text-[#71717A] truncate">{session.user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/signin' })}
+                    className="w-full px-3 py-2 text-left text-sm text-[#EF4444] hover:bg-[#111] rounded-b-xl transition-colors flex items-center gap-2"
+                  >
+                    <LogOut size={14} />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <Link href="/signin" className="px-4 py-2 bg-[#C6FE1E] hover:bg-[#b5ed0d] text-black font-semibold text-sm rounded-xl transition-all">
+              Sign In
+            </Link>
+          )}
         </div>
                     <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

@@ -17,7 +17,7 @@ export async function executeSQLQuery (
     const startTime = Date.now();
 
     const client = new Client({
-        connectionString : process.env.DATEBASE_URL,
+        connectionString : process.env.DATABASE_URL,
         connectionTimeoutMillis : timeoutMs,
         query_timeout : timeoutMs,
     })

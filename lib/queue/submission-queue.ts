@@ -2,11 +2,18 @@ import Queue from 'bull';
 import { prisma } from '@/lib/prisma';
 import { validateSubmission } from '@/lib/test-validator';
 
+// Parse Upstash Redis URL
+const redisUrl = process.env.UPSTASH_REDIS_REST_URL || '';
+const redisHost = redisUrl.replace('https://', '').replace('http://', '');
 
 export const submissionQueue = new Queue('sql-submissions', {
   redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
+    host: redisHost,
+    port: 6379,
+    password: process.env.UPSTASH_REDIS_REST_TOKEN,
+    tls: {
+      rejectUnauthorized: false
+    }
   }
 });
 

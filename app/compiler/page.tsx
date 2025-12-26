@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, RotateCcw, CheckCircle2, XCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
+import { Play, RotateCcw, CheckCircle2, XCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Maximize2, Loader } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-
 
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
@@ -11,83 +10,214 @@ if (typeof document !== 'undefined') {
   document.head.appendChild(style);
 }
 
+interface Problem {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+  category: string;
+  schema: string;
+  sampleData: string;
+  solution: string;
+  _count: { testCases: number };
+}
+
+interface TestCase {
+  id: string;
+  input: string;
+  expected: string;
+  isHidden: boolean;
+}
+
 export default function CompilerPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [code, setCode] = useState("-- Write your SQL query here\nSELECT * FROM customers;");
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
+  const [code, setCode] = useState("-- Write your SQL query here\nSELECT * FROM users;");
   const [output, setOutput] = useState<any>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTestCases, setShowTestCases] = useState(true);
-  const [problemTitle, setProblemTitle] = useState("Customers Who Never Order");
   const [activeTab, setActiveTab] = useState<"testcase" | "result">("testcase");
   const [testResults, setTestResults] = useState<any>(null);
   const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  
-  // Mock problem navigation
-  const problems = [
-    "Customers Who Never Order",
-    "Select All Columns",
-    "Inner Join Basics",
-    "Window Functions"
-  ];
-  const currentIndex = problems.findIndex(p => p === problemTitle);
-  const hasNext = currentIndex < problems.length - 1;
-  const hasPrev = currentIndex > 0;
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const difficultyColors: Record<string, string> = {
+    EASY: "text-[#C6FE1E] bg-[#C6FE1E]/10 border-[#C6FE1E]/20",
+    MEDIUM: "text-[#FCD34D] bg-[#FCD34D]/10 border-[#FCD34D]/20",
+    HARD: "text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20"
+  };
+
+  // Fetch problem and test cases
   useEffect(() => {
-    const title = searchParams.get('title');
-    if (title) {
-      setProblemTitle(decodeURIComponent(title));
+    const problemId = searchParams.get('problemId');
+    if (problemId) {
+      fetchProblem(problemId);
     }
   }, [searchParams]);
 
-  const handleRun = () => {
+  const fetchProblem = async (problemId: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch(`/api/problems/${problemId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to load problem (${response.status})`);
+      }
+      const data = await response.json();
+      if (!data || !data.title) {
+        throw new Error('Invalid problem data received');
+      }
+      setProblem(data);
+      setCode("-- Write your SQL query here\n");
+      
+      // Fetch test cases
+      const testResponse = await fetch(`/api/problems/${problemId}/testcases`);
+      if (testResponse.ok) {
+        const testData = await testResponse.json();
+        setTestCases(testData);
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Failed to load problem';
+      console.error('Fetch problem error:', errMsg);
+      setError(errMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRun = async () => {
+    if (!code.trim()) {
+      setError('Please enter a SQL query');
+      return;
+    }
+
     setIsRunning(true);
     setActiveTab("result");
     setConsoleOutput([]);
-    setConsoleOutput(prev => [...prev, "[INFO] Starting query execution..."]);
-    setTimeout(() => {
-      setConsoleOutput(prev => [...prev, "[SUCCESS] Query executed successfully"]);
-      setConsoleOutput(prev => [...prev, `[INFO] ${3} rows returned in 45ms`]);
-      setOutput({
-        success: true,
-        rows: [
-          { id: 1, name: "John Doe", email: "john@example.com" },
-          { id: 2, name: "Jane Smith", email: "jane@example.com" },
-          { id: 3, name: "Bob Johnson", email: "bob@example.com" },
-        ],
-        executionTime: "45ms"
+    
+    try {
+      const response = await fetch('/api/submissions/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problemId: problem?.id,
+          code: code,
+          isSubmission: false
+        })
       });
+
+      const result = await response.json();
+      setConsoleOutput(prev => [...prev, "[INFO] Starting query execution..."]);
+      
+      if (result.success) {
+        setConsoleOutput(prev => [...prev, "[SUCCESS] Query executed successfully"]);
+        setConsoleOutput(prev => [...prev, `[INFO] ${result.rows?.length || 0} rows returned`]);
+        setOutput({
+          success: true,
+          rows: result.rows || [],
+          executionTime: "45ms"
+        });
+      } else {
+        setConsoleOutput(prev => [...prev, `[ERROR] ${result.error}`]);
+        setOutput({
+          success: false,
+          error: result.error || 'Unknown error'
+        });
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Query execution failed';
+      setConsoleOutput(prev => [...prev, `[ERROR] ${errMsg}`]);
+      setOutput({
+        success: false,
+        error: errMsg
+      });
+    } finally {
       setIsRunning(false);
-    }, 1000);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!code.trim()) {
+      setError('Please enter a SQL query');
+      return;
+    }
+
     setIsSubmitting(true);
     setActiveTab("testcase");
-    setTimeout(() => {
-      setTestResults({
-        passed: 3,
-        total: 4,
-        cases: [
-          { id: 1, name: "Basic Test", passed: true, time: "12ms" },
-          { id: 2, name: "Empty Result", passed: true, time: "8ms" },
-          { id: 3, name: "Multiple Records", passed: true, time: "15ms" },
-          { id: 4, name: "Edge Case", passed: false, time: "10ms", error: "Expected 2 rows, got 3" },
-        ]
+    
+    try {
+      const response = await fetch('/api/submissions/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          problemId: problem?.id,
+          code: code,
+          isSubmission: true
+        })
       });
+
+      const result = await response.json();
+      
+      if (result.testResults) {
+        setTestResults({
+          passed: result.testResults.filter((t: any) => t.passed).length,
+          total: result.testResults.length,
+          cases: result.testResults.map((t: any, idx: number) => ({
+            id: idx + 1,
+            name: `Test Case ${idx + 1}`,
+            passed: t.passed,
+            time: "12ms",
+            error: t.error
+          }))
+        });
+      }
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Submission failed';
+      setConsoleOutput(prev => [...prev, `[ERROR] ${errMsg}`]);
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const handleReset = () => {
-    setCode("-- Write your SQL query here\nSELECT * FROM customers;");
+    setCode("-- Write your SQL query here\n");
     setOutput(null);
     setTestResults(null);
     setActiveTab("testcase");
   };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-[#050505] flex items-center justify-center">
+        <div className="text-center">
+          <Loader size={40} className="text-[#C6FE1E] animate-spin mx-auto mb-4" />
+          <p className="text-[#71717A]">Loading problem...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !problem) {
+    return (
+      <div className="h-screen bg-[#050505] flex items-center justify-center">
+        <div className="text-center">
+          <XCircle size={40} className="text-[#EF4444] mx-auto mb-4" />
+          <p className="text-[#EF4444] mb-4">{error || 'Problem not found'}</p>
+          <button
+            onClick={() => router.back()}
+            className="px-4 py-2 bg-[#C6FE1E] text-black font-bold rounded-lg hover:bg-[#b5ed0d]"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#050505] flex flex-col">
@@ -110,12 +240,13 @@ export default function CompilerPage() {
 
           <div className="p-6 border-b border-[#262626]/50 bg-[#0A0A0A]">
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase text-[#C6FE1E] bg-[#C6FE1E]/10 border-[#C6FE1E]/20">
-                EASY
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${difficultyColors[problem.difficulty]}`}>
+                {problem.difficulty}
               </span>
-              <span className="text-xs text-[#71717A]">Basic Select</span>
+              <span className="text-xs text-[#71717A]">{problem.category}</span>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">{problemTitle}</h1>
+            <h1 className="text-2xl font-bold text-white mb-2">{problem.title}</h1>
+            <p className="text-xs text-[#71717A]">{problem._count.testCases} test cases</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
@@ -124,81 +255,36 @@ export default function CompilerPage() {
               <div>
                 <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Description</h3>
                 <p className="text-[#A1A1AA] leading-relaxed text-sm">
-                  Write a SQL query to find all customers who have registered but never placed an order. 
-                  Return the <code className="px-1.5 py-0.5 bg-[#1A1A1A] rounded text-[#C6FE1E] text-xs">name</code> field for all matching records.
+                  {problem.description}
                 </p>
               </div>
 
               {/* Schema */}
               <div>
                 <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Schema</h3>
-                <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4 space-y-4">
-                  <div>
-                    <div className="text-xs font-bold text-[#C6FE1E] mb-2">Customers</div>
-                    <div className="space-y-2 text-xs font-mono">
-                      <div className="flex justify-between text-[#A1A1AA]">
-                        <span>id</span>
-                        <span className="text-[#71717A]">INT</span>
-                      </div>
-                      <div className="flex justify-between text-[#A1A1AA]">
-                        <span>name</span>
-                        <span className="text-[#71717A]">VARCHAR</span>
-                      </div>
-                      <div className="flex justify-between text-[#A1A1AA]">
-                        <span>email</span>
-                        <span className="text-[#71717A]">VARCHAR</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-[#C6FE1E] mb-2">Orders</div>
-                    <div className="space-y-2 text-xs font-mono">
-                      <div className="flex justify-between text-[#A1A1AA]">
-                        <span>id</span>
-                        <span className="text-[#71717A]">INT</span>
-                      </div>
-                      <div className="flex justify-between text-[#A1A1AA]">
-                        <span>customerId</span>
-                        <span className="text-[#71717A]">INT</span>
-                      </div>
-                      <div className="flex justify-between text-[#A1A1AA]">
-                        <span>amount</span>
-                        <span className="text-[#71717A]">DECIMAL</span>
-                      </div>
-                    </div>
-                  </div>
+                <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4">
+                  <pre className="text-xs font-mono text-[#71717A] overflow-x-auto whitespace-pre-wrap break-words">
+                    {problem.schema}
+                  </pre>
                 </div>
               </div>
 
-              {/* Example */}
+              {/* Sample Data */}
               <div>
-                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Example</h3>
+                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Sample Data</h3>
                 <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4">
-                  <div className="text-xs text-[#71717A] mb-2">Input:</div>
-                  <pre className="text-xs font-mono text-[#A1A1AA] mb-3">
-{`Customers:
-+----+----------+
-| id | name     |
-+----+----------+
-| 1  | Henry    |
-| 2  | Max      |
-+----+----------+
-
-Orders:
-+----+------------+
-| id | customerId |
-+----+------------+
-| 1  | 3          |
-+----+------------+`}
+                  <pre className="text-xs font-mono text-[#71717A] overflow-x-auto">
+                    {problem.sampleData}
                   </pre>
-                  <div className="text-xs text-[#71717A] mb-2">Output:</div>
-                  <pre className="text-xs font-mono text-[#A1A1AA]">
-{`+----------+
-| name     |
-+----------+
-| Henry    |
-| Max      |
-+----------+`}
+                </div>
+              </div>
+
+              {/* Solution */}
+              <div>
+                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Solution</h3>
+                <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4">
+                  <pre className="text-xs font-mono text-[#C6FE1E] overflow-x-auto">
+                    {problem.solution}
                   </pre>
                 </div>
               </div>
@@ -211,35 +297,8 @@ Orders:
           
           {/* Editor Header */}
           <div className="h-12 px-4 flex items-center justify-between border-b border-[#262626]/50 bg-[#0A0A0A]">
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-[#71717A] uppercase tracking-wider">SQL Editor</span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => hasPrev && setProblemTitle(problems[currentIndex - 1])}
-                  disabled={!hasPrev}
-                  className="p-1.5 text-[#71717A] hover:text-white hover:bg-[#1A1A1A] rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Previous Problem"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <button
-                  onClick={() => hasNext && setProblemTitle(problems[currentIndex + 1])}
-                  disabled={!hasNext}
-                  className="p-1.5 text-[#71717A] hover:text-white hover:bg-[#1A1A1A] rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Next Problem"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
+            <span className="text-xs font-semibold text-[#71717A] uppercase tracking-wider">SQL Editor</span>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-white hover:bg-[#1A1A1A] rounded-lg transition-all flex items-center gap-1.5"
-                title="Toggle Fullscreen"
-              >
-                <Maximize2 size={14} />
-              </button>
               <button
                 onClick={handleReset}
                 className="px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-white hover:bg-[#1A1A1A] rounded-lg transition-all flex items-center gap-1.5"
@@ -275,9 +334,7 @@ Orders:
                     Submitting
                   </>
                 ) : (
-                  <>
-                    Submit
-                  </>
+                  "Submit"
                 )}
               </button>
             </div>
@@ -378,7 +435,7 @@ Orders:
                                   <XCircle size={16} className="text-[#EF4444]" />
                                 )}
                                 <span className="text-sm font-semibold text-white">
-                                  Test Case {testCase.id}: {testCase.name}
+                                  {testCase.name}
                                 </span>
                               </div>
                               <span className="text-xs text-[#71717A]">{testCase.time}</span>
@@ -401,7 +458,7 @@ Orders:
                         <p>Run your query to see results</p>
                       </div>
                     </div>
-                  ) : output.success ? (
+                  ) : output.success && output.rows ? (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between text-xs text-[#71717A]">
                         <span>{output.rows.length} rows returned</span>
@@ -411,7 +468,7 @@ Orders:
                         <table className="w-full text-xs">
                           <thead>
                             <tr className="border-b border-[#262626]/50">
-                              {Object.keys(output.rows[0]).map((key) => (
+                              {output.rows.length > 0 && Object.keys(output.rows[0]).map((key) => (
                                 <th key={key} className="px-4 py-2 text-left font-semibold text-[#71717A] bg-[#111]">
                                   {key}
                                 </th>
@@ -423,7 +480,7 @@ Orders:
                               <tr key={i} className="border-b border-[#262626]/30 hover:bg-[#0A0A0A] transition-colors">
                                 {Object.values(row).map((val: any, j: number) => (
                                   <td key={j} className="px-4 py-2 text-[#A1A1AA] font-mono">
-                                    {val}
+                                    {String(val)}
                                   </td>
                                 ))}
                               </tr>
@@ -439,7 +496,7 @@ Orders:
                         <span className="text-sm font-semibold">Query Error</span>
                       </div>
                       <div className="bg-[#0A0A0A] border border-[#EF4444]/20 rounded-lg p-4">
-                        <pre className="text-xs text-[#EF4444] font-mono">{output.error}</pre>
+                        <pre className="text-xs text-[#EF4444] font-mono whitespace-pre-wrap break-words">{output.error}</pre>
                       </div>
                     </div>
                   )
