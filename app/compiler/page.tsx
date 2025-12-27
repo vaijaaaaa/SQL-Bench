@@ -227,14 +227,14 @@ export default function CompilerPage() {
         {/* Left Panel - Problem Description */}
         <div className="w-[40%] border-r border-[#262626]/50 flex flex-col">
           
-          {/* Back Button */}
-          <div className="p-4 border-b border-[#262626]/50">
+          {/* Back to Dashboard Button */}
+          <div className="p-4 border-b border-[#262626]/50 flex gap-2">
             <button
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-[#71717A] hover:text-white transition-colors group"
+              onClick={() => router.push('/dashboard')}
+              className="inline-flex items-center gap-2 text-[#C6FE1E] hover:text-black bg-[#181818] hover:bg-[#C6FE1E] border border-[#C6FE1E]/40 font-semibold rounded-lg px-4 py-2 transition-colors group"
             >
               <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-semibold">Back</span>
+              <span>Back to Dashboard</span>
             </button>
           </div>
 
