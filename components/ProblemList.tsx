@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Lock, Search, Filter, Loader } from 'lucide-react';
+import { ChevronLeft, Lock, Search, Filter, Loader, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { motion } from 'motion/react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { companyColors, defaultCompanyColor } from '@/lib/utils';
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -12,6 +17,7 @@ interface Problem {
   difficulty: Difficulty;
   category: string;
   slug: string;
+  companies?: string[];
   _count: { testCases: number };
 }
 
@@ -24,11 +30,10 @@ interface ProblemListProps {
 }
 
 const difficultyColors: Record<Difficulty, string> = {
-  EASY: 'text-[#C6FE1E] bg-[#C6FE1E]/10 border-[#C6FE1E]/20',
-  MEDIUM: 'text-[#FCD34D] bg-[#FCD34D]/10 border-[#FCD34D]/20',
-  HARD: 'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20',
+  EASY: 'text-green-500 bg-green-500/10 border-green-500/20',
+  MEDIUM: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20',
+  HARD: 'text-red-500 bg-red-500/10 border-red-500/20',
 };
-
 
 export default function ProblemList({
   title,
@@ -63,7 +68,7 @@ export default function ProblemList({
     const fetchProblems = async () => {
       try {
         setLoading(true);
-        let queryString = '/api/problems?limit=100';
+        let queryString = '/api/problems?limit=1000';
         if (category) {
           queryString += `&category=${encodeURIComponent(category)}`;
         }
@@ -101,145 +106,203 @@ export default function ProblemList({
   const uniqueCategories = Array.from(new Set(problems.map((p) => p.category)));
 
   return (
-    <div className="min-h-screen bg-[#050505] pt-24 pb-20">
+    <div className="min-h-screen bg-background pt-24 pb-20">
       <div className="max-w-6xl mx-auto px-6">
         {/* Back Button */}
-        <Link
-          href={backLink}
-          className="inline-flex items-center gap-2 text-[#71717A] hover:text-white transition-colors mb-8 group"
-        >
-          <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-semibold">Back to Dashboard</span>
-        </Link>
-
-        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-3">{title}</h1>
-          <p className="text-[#71717A] text-lg">{description}</p>
+          <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground">
+            <Link href={backLink} className="flex items-center gap-2">
+              <ArrowLeft size={16} />
+              <span>Back to Dashboard</span>
+            </Link>
+          </Button>
         </div>
 
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl font-bold text-foreground mb-3">{title}</h1>
+          <p className="text-muted-foreground text-lg max-w-2xl">{description}</p>
+        </motion.div>
+
         {/* Search and Filters */}
-        <div className="mb-6 flex flex-col md:flex-row gap-4">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-8 flex flex-col md:flex-row gap-4"
+        >
           <div className="flex-1 relative">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#71717A]" />
-            <input
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
               type="text"
               placeholder="Search problems..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-12 pr-4 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl text-white text-sm focus:outline-none focus:border-[#C6FE1E]/30 transition-colors"
+              className="pl-10 h-11 bg-card"
             />
           </div>
 
           {/* Difficulty Filter */}
-          <div className="flex items-center gap-2">
-            <Filter size={18} className="text-[#71717A]" />
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+            <Filter size={18} className="text-muted-foreground mr-2 hidden md:block" />
             {['ALL', 'EASY', 'MEDIUM', 'HARD'].map((diff) => (
-              <button
+              <Button
                 key={diff}
+                variant={filterDifficulty === diff ? "default" : "outline"}
+                size="sm"
                 onClick={() => setFilterDifficulty(diff as Difficulty | 'ALL')}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-                  filterDifficulty === diff
-                    ? 'bg-[#C6FE1E] text-black'
-                    : 'bg-[#0A0A0A] border border-[#262626]/50 text-[#71717A] hover:text-white hover:border-[#262626]'
-                }`}
+                className="text-xs font-bold"
               >
                 {diff}
-              </button>
+              </Button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Category Filter (if multiple categories) */}
         {uniqueCategories.length > 1 && !category && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            <button
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="mb-8 flex flex-wrap gap-2"
+          >
+            <Button
+              variant={filterCategory === 'ALL' ? "secondary" : "ghost"}
+              size="sm"
               onClick={() => setFilterCategory('ALL')}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                filterCategory === 'ALL'
-                  ? 'bg-[#C6FE1E] text-black'
-                  : 'bg-[#0A0A0A] border border-[#262626]/50 text-[#71717A] hover:text-white'
-              }`}
+              className="text-xs"
             >
               All Categories
-            </button>
+            </Button>
             {uniqueCategories.map((cat) => (
-              <button
+              <Button
                 key={cat}
+                variant={filterCategory === cat ? "secondary" : "ghost"}
+                size="sm"
                 onClick={() => setFilterCategory(cat)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-                  filterCategory === cat
-                    ? 'bg-[#C6FE1E] text-black'
-                    : 'bg-[#0A0A0A] border border-[#262626]/50 text-[#71717A] hover:text-white'
-                }`}
+                className="text-xs"
               >
                 {cat}
-              </button>
+              </Button>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* Results Count */}
-        <div className="mb-4 text-sm text-[#71717A]">
+        <div className="mb-4 text-sm text-muted-foreground">
           {loading ? 'Loading...' : `Showing ${filteredProblems.length} of ${problems.length} problems`}
         </div>
 
         {/* Problems List */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader className="w-8 h-8 text-[#C6FE1E] animate-spin" />
-            <span className="ml-3 text-[#71717A]">Loading problems...</span>
+            <Loader className="w-8 h-8 text-primary animate-spin" />
+            <span className="ml-3 text-muted-foreground">Loading problems...</span>
           </div>
         ) : filteredProblems.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[#71717A]">No problems found matching your filters.</p>
+          <div className="text-center py-12 border border-dashed border-border rounded-xl">
+            <p className="text-muted-foreground">No problems found matching your filters.</p>
+            <Button 
+              variant="link" 
+              onClick={() => {
+                setSearchQuery('');
+                setFilterDifficulty('ALL');
+                setFilterCategory('ALL');
+              }}
+            >
+              Clear filters
+            </Button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.05
+                }
+              }
+            }}
+            className="space-y-3"
+          >
             {filteredProblems.map((problem, index) => (
-              <Link
+              <motion.div
                 key={problem.id}
-                href={`/compiler?problemId=${problem.id}`}
-                className="block group p-5 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl hover:border-[#C6FE1E]/30 transition-all hover:shadow-[0_0_20px_rgba(198,254,30,0.1)]"
+                variants={{
+                  hidden: { opacity: 0, y: 10 },
+                  visible: { opacity: 1, y: 0 }
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    {/* Problem Number */}
-                    <div className="w-10 h-10 rounded-lg bg-[#111] border border-[#262626]/50 flex items-center justify-center text-[#71717A] font-bold text-sm flex-shrink-0">
-                      {index + 1}
-                    </div>
+                <Link
+                  href={`/compiler?problemId=${problem.id}`}
+                  className="block group p-5 bg-card border border-border rounded-xl hover:border-primary/50 transition-all hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Problem Number */}
+                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        {index + 1}
+                      </div>
 
-                    {/* Problem Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-semibold text-white group-hover:text-[#C6FE1E] transition-colors mb-1 flex items-center gap-2">
-                        {problem.title}
-                        {isSolved(problem.id) && (
-                          <span title="Solved" className="inline-block text-[#C6FE1E] font-bold text-lg align-middle">✔</span>
-                        )}
-                      </h3>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                            difficultyColors[problem.difficulty]
-                          }`}
-                        >
-                          {problem.difficulty}
-                        </span>
-                        <span className="text-xs text-[#71717A]">{problem.category}</span>
-                        <span className="text-xs text-[#71717A]">• {problem._count.testCases} test cases</span>
+                      {/* Problem Info */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors mb-1 flex items-center gap-2">
+                          {problem.title}
+                          {isSolved(problem.id) && (
+                            <CheckCircle2 size={16} className="text-green-500 fill-green-500/10" />
+                          )}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
+                              difficultyColors[problem.difficulty]
+                            }`}
+                          >
+                            {problem.difficulty}
+                          </span>
+                          <span className="text-xs text-muted-foreground">{problem.category}</span>
+                          <span className="text-xs text-muted-foreground">• {problem._count.testCases} test cases</span>
+                          {problem.companies && problem.companies.length > 0 && (
+                            <div className="flex gap-1 ml-2">
+                              {problem.companies.slice(0, 3).map((company) => (
+                                <Badge 
+                                  key={company} 
+                                  variant="secondary" 
+                                  className={`text-[10px] h-5 px-1.5 font-normal ${companyColors[company] || defaultCompanyColor}`}
+                                >
+                                  {company}
+                                </Badge>
+                              ))}
+                              {problem.companies.length > 3 && (
+                                <span className="text-[10px] text-muted-foreground">+{problem.companies.length - 3}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Chevron */}
-                  <ChevronLeft
-                    size={20}
-                    className="text-[#262626] group-hover:text-[#C6FE1E] rotate-180 group-hover:translate-x-1 transition-all flex-shrink-0"
-                  />
-                </div>
-              </Link>
+                    {/* Chevron */}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                      <ChevronLeft
+                        size={20}
+                        className="rotate-180"
+                      />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

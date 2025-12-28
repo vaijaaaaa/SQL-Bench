@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, Trophy, Flame, Calendar, CheckCircle2, Clock, Code2, Award, TrendingUp, Target, Zap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "submissions" | "stats">("overview");
@@ -51,9 +53,9 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchProblems() {
       try {
-        const res = await fetch("/api/problems");
-        const data = res.ok ? await res.json() : [];
-        setAllProblems(data);
+        const res = await fetch("/api/problems?limit=1000");
+        const data = res.ok ? await res.json() : { data: [] };
+        setAllProblems(data.data || []);
       } catch {
         setAllProblems([]);
       }
@@ -89,113 +91,115 @@ export default function ProfilePage() {
   // Loading and error states
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
-        <span className="text-lg text-[#A1A1A1]">Loading...</span>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <span className="text-lg text-muted-foreground">Loading...</span>
       </div>
     );
   }
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
-        <span className="text-lg text-red-500">{error}</span>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <span className="text-lg text-destructive">{error}</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] pt-24 pb-20">
+    <div className="min-h-screen bg-background pt-24 pb-20">
       <div className="max-w-6xl mx-auto px-6">
         
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-[#71717A] hover:text-white transition-colors mb-8 group">
-          <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-          <span className="text-sm font-semibold">Back to Dashboard</span>
-        </Link>
+        <Button variant="ghost" size="sm" asChild className="text-muted-foreground hover:text-foreground mb-8">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <ChevronLeft size={16} />
+            <span>Back to Dashboard</span>
+          </Link>
+        </Button>
 
         {/* Profile Header */}
-        <div className="mb-8 p-8 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl">
+        <div className="mb-8 p-8 bg-card border border-border rounded-2xl">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-[#C6FE1E] to-[#00E0FF] p-[2px]">
-                <div className="w-full h-full rounded-2xl bg-[#050505] flex items-center justify-center text-3xl font-bold">
+              <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-primary to-cyan-400 p-[2px]">
+                <div className="w-full h-full rounded-2xl bg-card flex items-center justify-center text-3xl font-bold text-foreground">
                   {userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('') : "U"}
                 </div>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white mb-1">{userData?.name || "User"}</h1>
-                <p className="text-[#71717A] mb-3">@{userData?.username || "username"}</p>
+                <h1 className="text-3xl font-bold text-foreground mb-1">{userData?.name || "User"}</h1>
+                <p className="text-muted-foreground mb-3">@{userData?.username || "username"}</p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Calendar size={16} className="text-[#71717A]" />
-                    <span className="text-[#A1A1AA]">Joined {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : "-"}</span>
+                    <Calendar size={16} className="text-muted-foreground" />
+                    <span className="text-muted-foreground">Joined {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : "-"}</span>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-[#C6FE1E]/10 border border-[#C6FE1E]/20 rounded-lg">
-                    <Trophy size={14} className="text-[#C6FE1E]" />
-                    <span className="text-xs font-bold text-[#C6FE1E]">{userData?.xp ?? 0} XP</span>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-lg">
+                    <Trophy size={14} className="text-primary" />
+                    <span className="text-xs font-bold text-primary">{userData?.xp ?? 0} XP</span>
                   </div>
                 </div>
               </div>
             </div>
             
             <div className="text-right">
-              <div className="text-[#71717A] text-sm mb-1">Global Rank</div>
-              <div className="text-2xl font-bold text-white">{userData?.rank ?? "-"}</div>
+              <div className="text-muted-foreground text-sm mb-1">Global Rank</div>
+              <div className="text-2xl font-bold text-foreground">{userData?.rank ?? "-"}</div>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
+          <div className="p-6 bg-card border border-border rounded-xl">
             <div className="flex items-center gap-3 mb-2">
-              <CheckCircle2 size={20} className="text-[#C6FE1E]" />
-              <span className="text-[#71717A] text-sm">Solved</span>
+              <CheckCircle2 size={20} className="text-primary" />
+              <span className="text-muted-foreground text-sm">Solved</span>
             </div>
-            <div className="text-3xl font-bold text-white">{totalSolved}</div>
-            <div className="text-xs text-[#71717A] mt-1">of {totalProblems} problems</div>
+            <div className="text-3xl font-bold text-foreground">{totalSolved}</div>
+            <div className="text-xs text-muted-foreground mt-1">of {totalProblems} problems</div>
           </div>
 
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
+          <div className="p-6 bg-card border border-border rounded-xl">
             <div className="flex items-center gap-3 mb-2">
               <Flame size={20} className="text-orange-500" />
-              <span className="text-[#71717A] text-sm">Streak</span>
+              <span className="text-muted-foreground text-sm">Streak</span>
             </div>
-            <div className="text-3xl font-bold text-white">{userData?.streak ?? 0}</div>
-            <div className="text-xs text-[#71717A] mt-1">days current</div>
+            <div className="text-3xl font-bold text-foreground">{userData?.streak ?? 0}</div>
+            <div className="text-xs text-muted-foreground mt-1">days current</div>
           </div>
 
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
+          <div className="p-6 bg-card border border-border rounded-xl">
             <div className="flex items-center gap-3 mb-2">
               <Target size={20} className="text-blue-500" />
-              <span className="text-[#71717A] text-sm">Best Streak</span>
+              <span className="text-muted-foreground text-sm">Best Streak</span>
             </div>
-            <div className="text-3xl font-bold text-white">{userData?.longestStreak ?? 0}</div>
-            <div className="text-xs text-[#71717A] mt-1">days max</div>
+            <div className="text-3xl font-bold text-foreground">{userData?.longestStreak ?? 0}</div>
+            <div className="text-xs text-muted-foreground mt-1">days max</div>
           </div>
 
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
+          <div className="p-6 bg-card border border-border rounded-xl">
             <div className="flex items-center gap-3 mb-2">
               <TrendingUp size={20} className="text-purple-500" />
-              <span className="text-[#71717A] text-sm">Progress</span>
+              <span className="text-muted-foreground text-sm">Progress</span>
             </div>
-            <div className="text-3xl font-bold text-white">{completionPercentage}%</div>
-            <div className="text-xs text-[#71717A] mt-1">completion rate</div>
+            <div className="text-3xl font-bold text-foreground">{completionPercentage}%</div>
+            <div className="text-xs text-muted-foreground mt-1">completion rate</div>
             <div className="mt-2">
-              <div className="h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
-                <div className="h-full bg-[#C6FE1E]" style={{ width: `${completionPercentage}%` }} />
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${completionPercentage}%` }} />
               </div>
-              <div className="text-xs text-[#A1A1A1] mt-1">{totalSolved}/{totalProblems} solved</div>
+              <div className="text-xs text-muted-foreground mt-1">{totalSolved}/{totalProblems} solved</div>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 mb-6 border-b border-[#262626]/50">
+        <div className="flex items-center gap-2 mb-6 border-b border-border">
           <button
             onClick={() => setActiveTab("overview")}
             className={`px-4 py-3 text-sm font-semibold transition-all ${
               activeTab === "overview"
-                ? "text-white border-b-2 border-[#C6FE1E]"
-                : "text-[#71717A] hover:text-white"
+                ? "text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Overview
@@ -204,8 +208,8 @@ export default function ProfilePage() {
             onClick={() => setActiveTab("submissions")}
             className={`px-4 py-3 text-sm font-semibold transition-all ${
               activeTab === "submissions"
-                ? "text-white border-b-2 border-[#C6FE1E]"
-                : "text-[#71717A] hover:text-white"
+                ? "text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Recent Submissions
@@ -214,8 +218,8 @@ export default function ProfilePage() {
             onClick={() => setActiveTab("stats")}
             className={`px-4 py-3 text-sm font-semibold transition-all ${
               activeTab === "stats"
-                ? "text-white border-b-2 border-[#C6FE1E]"
-                : "text-[#71717A] hover:text-white"
+                ? "text-foreground border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Statistics
@@ -226,38 +230,38 @@ export default function ProfilePage() {
         {activeTab === "overview" && (
           <div className="space-y-6">
             {/* Difficulty Breakdown */}
-            <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
-              <h3 className="text-lg font-bold text-white mb-6">Problems Solved</h3>
+            <div className="p-6 bg-card border border-border rounded-xl">
+              <h3 className="text-lg font-bold text-foreground mb-6">Problems Solved</h3>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-[#71717A]">Easy</span>
-                    <span className="text-sm font-bold text-white">{easy}</span>
+                    <span className="text-sm text-muted-foreground">Easy</span>
+                    <span className="text-sm font-bold text-foreground">{easy}</span>
                   </div>
-                  <div className="h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#C6FE1E]" style={{ width: `${allProblems.filter(p => p.difficulty === 'EASY').length ? (easy / allProblems.filter(p => p.difficulty === 'EASY').length) * 100 : 0}%` }} />
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500" style={{ width: `${allProblems.filter(p => p.difficulty === 'EASY').length ? (easy / allProblems.filter(p => p.difficulty === 'EASY').length) * 100 : 0}%` }} />
                   </div>
-                  <div className="text-xs text-[#A1A1A1] mt-1">{easy}/{allProblems.filter(p => p.difficulty === 'EASY').length} solved</div>
+                  <div className="text-xs text-muted-foreground mt-1">{easy}/{allProblems.filter(p => p.difficulty === 'EASY').length} solved</div>
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-[#71717A]">Medium</span>
-                    <span className="text-sm font-bold text-white">{medium}</span>
+                    <span className="text-sm text-muted-foreground">Medium</span>
+                    <span className="text-sm font-bold text-foreground">{medium}</span>
                   </div>
-                  <div className="h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#FCD34D]" style={{ width: `${allProblems.filter(p => p.difficulty === 'MEDIUM').length ? (medium / allProblems.filter(p => p.difficulty === 'MEDIUM').length) * 100 : 0}%` }} />
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-yellow-500" style={{ width: `${allProblems.filter(p => p.difficulty === 'MEDIUM').length ? (medium / allProblems.filter(p => p.difficulty === 'MEDIUM').length) * 100 : 0}%` }} />
                   </div>
-                  <div className="text-xs text-[#A1A1A1] mt-1">{medium}/{allProblems.filter(p => p.difficulty === 'MEDIUM').length} solved</div>
+                  <div className="text-xs text-muted-foreground mt-1">{medium}/{allProblems.filter(p => p.difficulty === 'MEDIUM').length} solved</div>
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-sm text-[#71717A]">Hard</span>
-                    <span className="text-sm font-bold text-white">{hard}</span>
+                    <span className="text-sm text-muted-foreground">Hard</span>
+                    <span className="text-sm font-bold text-foreground">{hard}</span>
                   </div>
-                  <div className="h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#EF4444]" style={{ width: `${allProblems.filter(p => p.difficulty === 'HARD').length ? (hard / allProblems.filter(p => p.difficulty === 'HARD').length) * 100 : 0}%` }} />
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full bg-red-500" style={{ width: `${allProblems.filter(p => p.difficulty === 'HARD').length ? (hard / allProblems.filter(p => p.difficulty === 'HARD').length) * 100 : 0}%` }} />
                   </div>
-                  <div className="text-xs text-[#A1A1A1] mt-1">{hard}/{allProblems.filter(p => p.difficulty === 'HARD').length} solved</div>
+                  <div className="text-xs text-muted-foreground mt-1">{hard}/{allProblems.filter(p => p.difficulty === 'HARD').length} solved</div>
                 </div>
               </div>
             </div>
@@ -266,37 +270,37 @@ export default function ProfilePage() {
         )}
 
         {activeTab === "submissions" && (
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
-            <h3 className="text-lg font-bold text-white mb-6">Recent Submissions</h3>
+          <div className="p-6 bg-card border border-border rounded-xl">
+            <h3 className="text-lg font-bold text-foreground mb-6">Recent Submissions</h3>
             <div className="space-y-3">
               {recentSubmissions.length === 0 ? (
-                <div className="text-center text-[#71717A] py-4">No submissions yet</div>
+                <div className="text-center text-muted-foreground py-4">No submissions yet</div>
               ) : recentSubmissions.map((submission) => (
                 <div
                   key={submission.id}
-                  className="p-4 bg-[#111] border border-[#262626]/50 rounded-lg hover:border-[#262626] transition-all"
+                  className="p-4 bg-muted/50 border border-border rounded-lg hover:border-primary/50 transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-white mb-2">{submission.problem?.title || submission.title || "-"}</h4>
+                      <h4 className="text-sm font-semibold text-foreground mb-2">{submission.problem?.title || submission.title || "-"}</h4>
                       <div className="flex items-center gap-3">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          (submission.problem?.difficulty || submission.difficulty) === "EASY" ? "text-[#C6FE1E] bg-[#C6FE1E]/10 border-[#C6FE1E]/20" :
-                          (submission.problem?.difficulty || submission.difficulty) === "MEDIUM" ? "text-[#FCD34D] bg-[#FCD34D]/10 border-[#FCD34D]/20" :
-                          "text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20"
+                          (submission.problem?.difficulty || submission.difficulty) === "EASY" ? "text-green-500 bg-green-500/10 border-green-500/20" :
+                          (submission.problem?.difficulty || submission.difficulty) === "MEDIUM" ? "text-yellow-500 bg-yellow-500/10 border-yellow-500/20" :
+                          "text-red-500 bg-red-500/10 border-red-500/20"
                         }`}>
                           {submission.problem?.difficulty || submission.difficulty || "-"}
                         </span>
                         <span className={`text-xs font-semibold ${
-                          (submission.status || submission.verdict) === "Accepted" ? "text-[#C6FE1E]" : "text-[#EF4444]"
+                          (submission.status || submission.verdict) === "Accepted" ? "text-green-500" : "text-red-500"
                         }`}>
                           {submission.status || submission.verdict || "-"}
                         </span>
-                        <span className="text-xs text-[#71717A]">{submission.executionTime ? `${submission.executionTime}ms` : (submission.runtime || "-")}</span>
+                        <span className="text-xs text-muted-foreground">{submission.executionTime ? `${submission.executionTime}ms` : (submission.runtime || "-")}</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="flex items-center gap-2 text-xs text-[#71717A]">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Clock size={12} />
                         {submission.createdAt ? new Date(submission.createdAt).toLocaleString() : (submission.time || "-")}
                       </div>
@@ -309,40 +313,40 @@ export default function ProfilePage() {
         )}
 
         {activeTab === "stats" && (
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-xl">
-            <h3 className="text-lg font-bold text-white mb-6">Detailed Statistics</h3>
+          <div className="p-6 bg-card border border-border rounded-xl">
+            <h3 className="text-lg font-bold text-foreground mb-6">Detailed Statistics</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-semibold text-[#71717A] mb-4 uppercase tracking-wider">Submission Stats</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Submission Stats</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#A1A1AA]">Total Submissions</span>
-                    <span className="text-sm font-bold text-white">{recentSubmissions.length}</span>
+                    <span className="text-sm text-muted-foreground">Total Submissions</span>
+                    <span className="text-sm font-bold text-foreground">{recentSubmissions.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#A1A1AA]">Acceptance Rate</span>
-                    <span className="text-sm font-bold text-[#C6FE1E]">85%</span>
+                    <span className="text-sm text-muted-foreground">Acceptance Rate</span>
+                    <span className="text-sm font-bold text-primary">85%</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#A1A1AA]">Average Runtime</span>
-                    <span className="text-sm font-bold text-white">67ms</span>
+                    <span className="text-sm text-muted-foreground">Average Runtime</span>
+                    <span className="text-sm font-bold text-foreground">67ms</span>
                   </div>
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-[#71717A] mb-4 uppercase tracking-wider">Activity</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground mb-4 uppercase tracking-wider">Activity</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#A1A1AA]">Problems This Week</span>
-                    <span className="text-sm font-bold text-white">12</span>
+                    <span className="text-sm text-muted-foreground">Problems This Week</span>
+                    <span className="text-sm font-bold text-foreground">12</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#A1A1AA]">Problems This Month</span>
-                    <span className="text-sm font-bold text-white">28</span>
+                    <span className="text-sm text-muted-foreground">Problems This Month</span>
+                    <span className="text-sm font-bold text-foreground">28</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-[#A1A1AA]">Most Active Day</span>
-                    <span className="text-sm font-bold text-white">Monday</span>
+                    <span className="text-sm text-muted-foreground">Most Active Day</span>
+                    <span className="text-sm font-bold text-foreground">Monday</span>
                   </div>
                 </div>
               </div>

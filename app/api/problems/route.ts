@@ -1,8 +1,28 @@
 import {NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function GET(request:Request) {
     try {
+
+        const ip = request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') ||
+                    'unknown';
+
+        const retaLimit = await checkRateLimit(
+            `problems:${ip}`,
+            100,
+            60
+        );
+
+        if (!retaLimit.allowed) {
+          return NextResponse.json(
+            { error: 'Too many requests. Please slow down.' },
+            { status: 429 }
+          );
+        }
+
+
         const {searchParams} = new URL(request.url);
         const difficulty = searchParams.get('difficulty');
         const category = searchParams.get('category');
@@ -33,6 +53,7 @@ export async function GET(request:Request) {
                 description : true,
                 difficulty : true,
                 category : true,
+                companies: true,
                 createdAt : true,
                 _count : {
                     select : {testCases : true},

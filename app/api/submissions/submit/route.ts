@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import { submissionQueue } from '@/lib/queue/submission-queue';
 import { executeSQLQuery } from '@/lib/sql-executor';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request: Request) {
   try {
@@ -27,6 +28,22 @@ export async function POST(request: Request) {
         { error: 'User not found' },
         { status: 404 }
       );
+    }
+
+    const ratelimit = await checkRateLimit(
+      `submit:${session.user.email}`,
+      10,
+      60
+    );
+
+    if(!ratelimit.allowed){
+      return NextResponse.json(
+        {
+          error : 'Too many submissions',
+          message : `Please wait ${ratelimit.resetIn} seconds before trying again`
+        },
+        {status : 429}
+      )
     }
 
     const body = await request.json();

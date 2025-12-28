@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit } from '@/lib/rate-limiter';
 
 export async function GET(
   request: Request,
@@ -7,6 +8,23 @@ export async function GET(
 ) {
   try {
     const { id: problemId } = await params;
+
+    const ip = request.headers.get('x-forwarded-for') || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+
+     const rateLimit = await checkRateLimit(
+      `testcases:${ip}`,
+      20,  
+      60   
+    );
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please slow down.' },
+        { status: 429 }
+      );
+    }
 
     const testCases = await prisma.testCase.findMany({
       where: { problemId },

@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { checkRateLimit } from "@/lib/rate-limiter"
 
 export const authOptions: AuthOptions = {
   
@@ -23,6 +24,15 @@ export const authOptions: AuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           return null
+        }
+        const rateLimit = await checkRateLimit(
+          `login:${credentials.email}`,
+          5,
+          60
+        )
+
+        if(!rateLimit.allowed){
+          throw new Error(`Too many login attempts. Try again in ${rateLimit.resetIn} seconds`);
         }
 
         const user = await prisma.user.findUnique({
