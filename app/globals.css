@@ -151,3 +151,22 @@
 textarea, code, pre {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
+    border-radius: 4px;
+    opacity: 0.3;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--foreground);
+    opacity: 0.5;
+  }
+}

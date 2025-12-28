@@ -6,12 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.innerHTML = 'nav { display: none !important; }';
-  document.head.appendChild(style);
-}
-
 interface Problem {
   id: string;
   title: string;
@@ -222,7 +216,7 @@ export default function CompilerPage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col pt-20">
       
       <div className="flex-1 flex overflow-hidden">
         

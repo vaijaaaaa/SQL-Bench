@@ -66,7 +66,7 @@ export default function ProblemList({
     const fetchProblems = async () => {
       try {
         setLoading(true);
-        let queryString = '/api/problems?limit=100';
+        let queryString = '/api/problems?limit=1000';
         if (category) {
           queryString += `&category=${encodeURIComponent(category)}`;
         }

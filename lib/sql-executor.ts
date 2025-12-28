@@ -22,10 +22,12 @@ export async function executeSQLQuery (
         query_timeout : timeoutMs,
     })
 
+    let tempSchema: string | null = null;
+
     try {
         await client.connect();
 
-        const tempSchema = `temp_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
+        tempSchema = `temp_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
 
         await client.query(`CREATE SCHEMA ${tempSchema}`);
         await client.query(`SET search_path TO ${tempSchema}`);
@@ -59,11 +61,17 @@ export async function executeSQLQuery (
             executionTime,
     };
 
-
-
-
     } catch (error :any) {
         const executionTime = Date.now() - startTime;
+        
+        if (tempSchema) {
+            try {
+                await client.query(`DROP SCHEMA ${tempSchema} CASCADE`);
+            } catch (cleanupError) {
+                console.error('Failed to cleanup schema:', cleanupError);
+            }
+        }
+
         try {
             await client.end();
         } catch (e) {
@@ -75,6 +83,4 @@ export async function executeSQLQuery (
       executionTime,
     };
     }
-
-    
 }

@@ -53,7 +53,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchProblems() {
       try {
-        const res = await fetch("/api/problems");
+        const res = await fetch("/api/problems?limit=1000");
         const data = res.ok ? await res.json() : { data: [] };
         setAllProblems(data.data || []);
       } catch {
