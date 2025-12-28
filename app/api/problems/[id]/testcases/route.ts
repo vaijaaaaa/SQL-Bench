@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const problemId = params.id;
+    const { id: problemId } = await params;
 
     const testCases = await prisma.testCase.findMany({
       where: { problemId },
@@ -20,7 +19,7 @@ export async function GET(
     });
 
     return NextResponse.json(testCases);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Fetch test cases error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch test cases' },
@@ -31,16 +30,13 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
-    const problemId = params.id;
-
+    const { id: problemId } = await params;
 
     const body = await request.json();
     const { input, expected, isHidden } = body;
-
 
     if (!input || !expected) {
       return NextResponse.json(
@@ -48,7 +44,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
 
     const problem = await prisma.problem.findUnique({
       where: { id: problemId },
@@ -61,20 +56,17 @@ export async function POST(
       );
     }
 
-
     const testCase = await prisma.testCase.create({
       data: {
         problemId,
         input,
         expected,
-        isHidden: isHidden || false, 
+        isHidden: Boolean(isHidden),
       },
     });
 
-
     return NextResponse.json(testCase, { status: 201 });
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create test case error:', error);
     return NextResponse.json(
       { error: 'Failed to create test case' },
@@ -83,21 +75,16 @@ export async function POST(
   }
 }
 
-
-
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-
-    const problemId = params.id;
-
+    const { id: problemId } = await params;
 
     const { searchParams } = new URL(request.url);
     const testCaseId = searchParams.get('testCaseId');
 
- 
     if (!testCaseId) {
       return NextResponse.json(
         { error: 'testCaseId query parameter is required' },
@@ -105,7 +92,6 @@ export async function DELETE(
       );
     }
 
-    
     const testCase = await prisma.testCase.findUnique({
       where: { id: testCaseId },
     });
@@ -128,13 +114,11 @@ export async function DELETE(
       where: { id: testCaseId },
     });
 
-  
     return NextResponse.json({
       message: 'Test case deleted successfully',
       deletedId: testCaseId,
     });
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Delete test case error:', error);
     return NextResponse.json(
       { error: 'Failed to delete test case' },

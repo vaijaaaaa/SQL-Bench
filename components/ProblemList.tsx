@@ -29,6 +29,7 @@ const difficultyColors: Record<Difficulty, string> = {
   HARD: 'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20',
 };
 
+
 export default function ProblemList({
   title,
   description,
@@ -36,6 +37,7 @@ export default function ProblemList({
   categories,
   backLink,
 }: ProblemListProps) {
+  const [progressData, setProgressData] = useState<any[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,16 +45,28 @@ export default function ProblemList({
   const [filterCategory, setFilterCategory] = useState<string | 'ALL'>('ALL');
 
   useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        const res = await fetch('/api/user/progress');
+        if (res.ok) {
+          const data = await res.json();
+          setProgressData(data || []);
+        }
+      } catch (error) {
+        setProgressData([]);
+      }
+    };
+    fetchProgress();
+  }, []);
+
+  useEffect(() => {
     const fetchProblems = async () => {
       try {
         setLoading(true);
-        // Build query string with filters
         let queryString = '/api/problems?limit=100';
-
         if (category) {
           queryString += `&category=${encodeURIComponent(category)}`;
         }
-
         const response = await fetch(queryString);
         const data = await response.json();
         setProblems(data.data || []);
@@ -63,9 +77,14 @@ export default function ProblemList({
         setLoading(false);
       }
     };
-
     fetchProblems();
   }, [category]);
+
+  // Helper to check if a problem is solved
+  const isSolved = (problemId: string) =>
+    progressData.some(
+      (p: any) => p.problemId === problemId && p.status === "SOLVED"
+    );
 
   // Filter problems based on search and difficulty
   const filteredProblems = problems.filter((problem) => {
@@ -192,8 +211,11 @@ export default function ProblemList({
 
                     {/* Problem Info */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-semibold text-white group-hover:text-[#C6FE1E] transition-colors mb-1">
+                      <h3 className="text-base font-semibold text-white group-hover:text-[#C6FE1E] transition-colors mb-1 flex items-center gap-2">
                         {problem.title}
+                        {isSolved(problem.id) && (
+                          <span title="Solved" className="inline-block text-[#C6FE1E] font-bold text-lg align-middle">✔</span>
+                        )}
                       </h3>
                       <div className="flex flex-wrap items-center gap-2">
                         <span

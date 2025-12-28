@@ -39,7 +39,7 @@ export default function CompilerPage() {
   const [isRunning, setIsRunning] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTestCases, setShowTestCases] = useState(true);
-  const [activeTab, setActiveTab] = useState<"testcase" | "result">("testcase");
+  const [activeTab, setActiveTab] = useState<"testcase" | "result" | "console">("testcase");
   const [testResults, setTestResults] = useState<any>(null);
   const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -227,14 +227,14 @@ export default function CompilerPage() {
         {/* Left Panel - Problem Description */}
         <div className="w-[40%] border-r border-[#262626]/50 flex flex-col">
           
-          {/* Back Button */}
-          <div className="p-4 border-b border-[#262626]/50">
+          {/* Back to Dashboard Button */}
+          <div className="p-4 border-b border-[#262626]/50 flex gap-2">
             <button
-              onClick={() => router.back()}
-              className="inline-flex items-center gap-2 text-[#71717A] hover:text-white transition-colors group"
+              onClick={() => router.push('/dashboard')}
+              className="inline-flex items-center gap-2 text-[#C6FE1E] hover:text-black bg-[#181818] hover:bg-[#C6FE1E] border border-[#C6FE1E]/40 font-semibold rounded-lg px-4 py-2 transition-colors group"
             >
               <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              <span className="text-sm font-semibold">Back</span>
+              <span>Back to Dashboard</span>
             </button>
           </div>
 
@@ -353,6 +353,7 @@ export default function CompilerPage() {
           <div className="border-t border-[#262626]/50">
             {/* Tabs */}
             <div className="flex items-center border-b border-[#262626]/50 bg-[#0A0A0A]">
+
               <button
                 onClick={() => {
                   setActiveTab("testcase");
@@ -380,7 +381,15 @@ export default function CompilerPage() {
                 Result
               </button>
               <button
-                className="px-4 py-2.5 text-xs font-semibold text-[#71717A] hover:text-white transition-all"
+                onClick={() => {
+                  setActiveTab("console");
+                  setShowTestCases(true);
+                }}
+                className={`px-4 py-2.5 text-xs font-semibold transition-all ${
+                  activeTab === "console"
+                    ? "text-white border-b-2 border-[#C6FE1E]"
+                    : "text-[#71717A] hover:text-white"
+                }`}
               >
                 Console {consoleOutput.length > 0 && `(${consoleOutput.length})`}
               </button>
@@ -450,7 +459,7 @@ export default function CompilerPage() {
                       </div>
                     </div>
                   )
-                ) : (
+                ) : activeTab === "result" ? (
                   !output ? (
                     <div className="flex items-center justify-center h-full text-[#71717A] text-sm">
                       <div className="text-center">
@@ -500,7 +509,17 @@ export default function CompilerPage() {
                       </div>
                     </div>
                   )
-                )}
+                ) : activeTab === "console" ? (
+                  <div className="h-full overflow-y-auto font-mono text-xs text-[#C6FE1E] bg-[#0A0A0A] rounded-lg p-2">
+                    {consoleOutput.length === 0 ? (
+                      <div className="text-[#71717A]">No console output yet.</div>
+                    ) : (
+                      consoleOutput.map((line, idx) => (
+                        <div key={idx}>{line}</div>
+                      ))
+                    )}
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
