@@ -5,6 +5,9 @@ import { Play, RotateCcw, CheckCircle2, XCircle, ChevronDown, ChevronUp, Chevron
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { companyColors, defaultCompanyColor } from "@/lib/utils";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Problem {
   id: string;
@@ -12,6 +15,7 @@ interface Problem {
   description: string;
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   category: string;
+  companies: string[];
   schema: string;
   sampleData: string;
   solution: string;
@@ -40,11 +44,53 @@ export default function CompilerPage() {
   const [consoleOutput, setConsoleOutput] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTestCaseId, setActiveTestCaseId] = useState<string | null>(null);
 
   const difficultyColors: Record<string, string> = {
     EASY: "text-green-500 bg-green-500/10 border-green-500/20",
     MEDIUM: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
     HARD: "text-red-500 bg-red-500/10 border-red-500/20"
+  };
+
+  const renderExpectedOutput = (expected: string) => {
+    try {
+      const data = JSON.parse(expected);
+      if (Array.isArray(data) && data.length > 0 && typeof data[0] === 'object') {
+        return (
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border">
+                  {Object.keys(data[0]).map((key) => (
+                    <th key={key} className="px-4 py-2 text-left font-semibold text-muted-foreground bg-muted/50">
+                      {key}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row: any, i: number) => (
+                  <tr key={i} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                    {Object.values(row).map((val: any, j: number) => (
+                      <td key={j} className="px-4 py-2 text-foreground font-mono">
+                        {val === null ? 'null' : String(val)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      }
+    } catch (e) {
+      // Not JSON or not array of objects
+    }
+    return (
+      <div className="bg-muted/50 border border-border rounded-lg p-3 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
+        {expected}
+      </div>
+    );
   };
 
   // Fetch problem and test cases
@@ -76,6 +122,9 @@ export default function CompilerPage() {
       if (testResponse.ok) {
         const testData = await testResponse.json();
         setTestCases(testData);
+        if (testData.length > 0) {
+          setActiveTestCaseId(testData[0].id);
+        }
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Failed to load problem';
@@ -216,34 +265,97 @@ export default function CompilerPage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col pt-20">
+    <div className="h-screen bg-background flex flex-col">
       
+      {/* Compiler Navbar */}
+      <div className="h-14 border-b border-border flex items-center justify-between px-4 bg-card">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push('/dashboard')}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft size={16} className="mr-2" />
+            Problem List
+          </Button>
+          {problem && (
+            <div className="flex items-center gap-2">
+              <ChevronRight size={16} className="text-muted-foreground" />
+              <span className="text-sm font-medium">{problem.title}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRun}
+            disabled={isRunning}
+            className="h-8"
+          >
+            {isRunning ? (
+              <>
+                <Loader size={14} className="animate-spin mr-2" />
+                Running
+              </>
+            ) : (
+              <>
+                <Play size={14} className="mr-2" />
+                Run
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="h-8 bg-green-600 hover:bg-green-700 text-white"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader size={14} className="animate-spin mr-2" />
+                Submitting
+              </>
+            ) : (
+              "Submit"
+            )}
+          </Button>
+        </div>
+      </div>
+
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left Panel - Problem Description */}
         <div className="w-[40%] border-r border-border flex flex-col bg-card/50">
           
-          {/* Back to Dashboard Button */}
-          <div className="p-4 border-b border-border flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft size={16} className="mr-2" />
-              Back to Dashboard
-            </Button>
-          </div>
-
           <div className="p-6 border-b border-border bg-card">
             <div className="flex items-center gap-3 mb-4">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${difficultyColors[problem.difficulty]}`}>
                 {problem.difficulty}
               </span>
-              <span className="text-xs text-muted-foreground">{problem.category}</span>
+              <Badge variant="secondary" className="text-xs font-normal">
+                {problem.category}
+              </Badge>
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">{problem.title}</h1>
+            
+            {/* Companies */}
+            {problem.companies && problem.companies.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {problem.companies.map((company) => (
+                  <Badge 
+                    key={company} 
+                    variant="outline" 
+                    className={`text-[10px] ${companyColors[company] || defaultCompanyColor}`}
+                  >
+                    {company}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
             <p className="text-xs text-muted-foreground">{problem._count.testCases} test cases</p>
           </div>
 
@@ -252,9 +364,22 @@ export default function CompilerPage() {
             <div className="space-y-6">
               <div>
                 <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Description</h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">
-                  {problem.description}
-                </p>
+                <div className="text-muted-foreground leading-relaxed text-sm prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      table: ({node, ...props}) => <table className="border-collapse table-auto w-full text-sm my-4" {...props} />,
+                      thead: ({node, ...props}) => <thead className="bg-muted/50" {...props} />,
+                      tr: ({node, ...props}) => <tr className="border-b border-border" {...props} />,
+                      th: ({node, ...props}) => <th className="border border-border px-4 py-2 text-left font-semibold" {...props} />,
+                      td: ({node, ...props}) => <td className="border border-border px-4 py-2 font-mono text-xs" {...props} />,
+                      code: ({node, ...props}) => <code className="bg-muted px-1 py-0.5 rounded text-xs font-mono" {...props} />,
+                      pre: ({node, ...props}) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4" {...props} />,
+                    }}
+                  >
+                    {problem.description}
+                  </ReactMarkdown>
+                </div>
               </div>
 
               {/* Schema */}
@@ -294,51 +419,19 @@ export default function CompilerPage() {
         <div className="flex-1 flex flex-col bg-background">
           
           {/* Editor Header */}
-          <div className="h-12 px-4 flex items-center justify-between border-b border-border bg-card">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">SQL Editor</span>
+          <div className="h-10 px-4 flex items-center justify-between border-b border-border bg-card/50">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">SQL Editor</span>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleReset}
-                className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                className="h-7 text-xs text-muted-foreground hover:text-foreground"
               >
-                <RotateCcw size={14} className="mr-1.5" />
+                <RotateCcw size={12} className="mr-1.5" />
                 Reset
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRun}
-                disabled={isRunning}
-                className="h-8 text-xs font-bold"
-              >
-                {isRunning ? (
-                  <>
-                    <Loader size={14} className="animate-spin mr-1.5" />
-                    Running
-                  </>
-                ) : (
-                  <>
-                    <Play size={14} className="mr-1.5" />
-                    Run
-                  </>
-                )}
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="h-8 text-xs font-bold"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader size={14} className="animate-spin mr-1.5" />
-                    Submitting
-                  </>
-                ) : (
-                  "Submit"
-                )}
               </Button>
             </div>
           </div>
@@ -408,60 +501,49 @@ export default function CompilerPage() {
             {showTestCases && (
               <div className="h-64 overflow-y-auto p-4 bg-background custom-scrollbar">
                 {activeTab === "testcase" ? (
-                  !testResults ? (
-                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                      <div className="text-center">
-                        <CheckCircle2 size={32} className="mx-auto mb-2 opacity-50" />
-                        <p>Submit your solution to run test cases</p>
+                  <div className="space-y-4">
+                    {testCases.length === 0 ? (
+                      <div className="text-center text-muted-foreground text-sm py-8">
+                        No test cases available.
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className={`text-sm font-bold ${testResults.passed === testResults.total ? 'text-green-500' : 'text-yellow-500'}`}>
-                          {testResults.passed === testResults.total ? (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 size={20} className="text-green-500" />
-                              <span>All test cases passed!</span>
-                            </div>
-                          ) : (
-                            <span>{testResults.passed}/{testResults.total} test cases passed</span>
-                          )}
+                    ) : (
+                      <>
+                        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                          {testCases.map((tc, idx) => (
+                            <button
+                              key={tc.id}
+                              onClick={() => setActiveTestCaseId(tc.id)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                                activeTestCaseId === tc.id
+                                  ? "bg-muted text-foreground border border-primary/20"
+                                  : "text-muted-foreground hover:bg-muted/50"
+                              }`}
+                            >
+                              Case {idx + 1}
+                            </button>
+                          ))}
                         </div>
-                      </div>
-                      <div className="space-y-2">
-                        {testResults.cases.map((testCase: any) => (
-                          <div
-                            key={testCase.id}
-                            className={`p-4 rounded-lg border ${
-                              testCase.passed
-                                ? "bg-green-500/5 border-green-500/20"
-                                : "bg-red-500/5 border-red-500/20"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-2">
-                                {testCase.passed ? (
-                                  <CheckCircle2 size={16} className="text-green-500" />
-                                ) : (
-                                  <XCircle size={16} className="text-red-500" />
-                                )}
-                                <span className="text-sm font-semibold text-foreground">
-                                  {testCase.name}
-                                </span>
+                        
+                        {testCases.map((tc) => {
+                          if (tc.id !== activeTestCaseId) return null;
+                          return (
+                            <div key={tc.id} className="space-y-4">
+                              <div>
+                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Input</div>
+                                <div className="bg-muted/50 border border-border rounded-lg p-3 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
+                                  {tc.input}
+                                </div>
                               </div>
-                              <span className="text-xs text-muted-foreground">{testCase.time}</span>
+                              <div>
+                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Expected Output</div>
+                                {renderExpectedOutput(tc.expected)}
+                              </div>
                             </div>
-                            {!testCase.passed && testCase.error && (
-                              <div className="mt-2 text-xs text-red-500 font-mono">
-                                {testCase.error}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
                 ) : activeTab === "result" ? (
                   !output ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

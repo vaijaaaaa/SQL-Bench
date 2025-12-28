@@ -71,6 +71,7 @@ model Problem {
   description String @db.Text
   difficulty Difficulty
   category String
+  companies String[]
 
   schema String @db.Text
   sampleData String @db.Text

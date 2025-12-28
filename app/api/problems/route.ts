@@ -53,6 +53,7 @@ export async function GET(request:Request) {
                 description : true,
                 difficulty : true,
                 category : true,
+                companies: true,
                 createdAt : true,
                 _count : {
                     select : {testCases : true},

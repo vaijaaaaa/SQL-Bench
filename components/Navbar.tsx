@@ -5,10 +5,16 @@ import { Zap, Menu, X, LogOut, User, ChevronRight } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
+
+  if (pathname.startsWith("/compiler")) {
+    return null;
+  }
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard" },

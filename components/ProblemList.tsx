@@ -7,6 +7,7 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { companyColors, defaultCompanyColor } from '@/lib/utils';
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
 
@@ -16,6 +17,7 @@ interface Problem {
   difficulty: Difficulty;
   category: string;
   slug: string;
+  companies?: string[];
   _count: { testCases: number };
 }
 
@@ -269,6 +271,22 @@ export default function ProblemList({
                           </span>
                           <span className="text-xs text-muted-foreground">{problem.category}</span>
                           <span className="text-xs text-muted-foreground">• {problem._count.testCases} test cases</span>
+                          {problem.companies && problem.companies.length > 0 && (
+                            <div className="flex gap-1 ml-2">
+                              {problem.companies.slice(0, 3).map((company) => (
+                                <Badge 
+                                  key={company} 
+                                  variant="secondary" 
+                                  className={`text-[10px] h-5 px-1.5 font-normal ${companyColors[company] || defaultCompanyColor}`}
+                                >
+                                  {company}
+                                </Badge>
+                              ))}
+                              {problem.companies.length > 3 && (
+                                <span className="text-[10px] text-muted-foreground">+{problem.companies.length - 3}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
