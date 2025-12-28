@@ -14,7 +14,6 @@ export default function Navbar(){
         {name : "SQL 75",href : "/sql75"},
         {name : "Joins",href : "/joins"},
         {name : "Self Query",href : "/selfquery"},
-        {name : "Editor",href : "/compiler"},
     ];
 
     return (
@@ -44,9 +43,7 @@ export default function Navbar(){
             <div className="w-10 h-10 rounded-2xl bg-[#111] animate-pulse" />
           ) : session?.user ? (
             <>
-              <div className="px-4 py-1.5 bg-[#111] border border-[#262626] rounded-xl text-xs font-bold text-[#C6FE1E]">
-                1,250 XP
-              </div>
+              
               <div className="relative group">
                 <Link href="/profile" className="block">
                   {session.user.image ? (

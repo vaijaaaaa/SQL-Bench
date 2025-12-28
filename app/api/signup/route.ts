@@ -1,12 +1,33 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 
 export async function POST(request :Request){
     try{
         const body = await request.json();
         const {email,password,name} = body
+
+        const ip = request.headers.get('x-forwarded-for') || 
+                    request.headers.get('x-real-ip') || 
+                    'unknown';
+        
+        const rateLimit = await checkRateLimit(
+            `signup:${ip}`,
+            3,
+            3600
+        );
+
+        if(!rateLimit.allowed){
+            return NextResponse.json(
+                {
+                    error : 'Too many signup attempts',
+                    message :   `Try again in ${Math.ceil(rateLimit.resetIn/60)} minutes`
+                },
+                {status : 429}
+            );
+        }
 
         if(!email || !password){
             return NextResponse.json(
