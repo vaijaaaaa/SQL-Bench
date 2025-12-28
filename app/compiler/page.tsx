@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { Play, RotateCcw, CheckCircle2, XCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Maximize2, Loader } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 if (typeof document !== 'undefined') {
   const style = document.createElement('style');
@@ -46,9 +48,9 @@ export default function CompilerPage() {
   const [error, setError] = useState<string | null>(null);
 
   const difficultyColors: Record<string, string> = {
-    EASY: "text-[#C6FE1E] bg-[#C6FE1E]/10 border-[#C6FE1E]/20",
-    MEDIUM: "text-[#FCD34D] bg-[#FCD34D]/10 border-[#FCD34D]/20",
-    HARD: "text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/20"
+    EASY: "text-green-500 bg-green-500/10 border-green-500/20",
+    MEDIUM: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
+    HARD: "text-red-500 bg-red-500/10 border-red-500/20"
   };
 
   // Fetch problem and test cases
@@ -193,10 +195,10 @@ export default function CompilerPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader size={40} className="text-[#C6FE1E] animate-spin mx-auto mb-4" />
-          <p className="text-[#71717A]">Loading problem...</p>
+          <Loader size={40} className="text-primary animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading problem...</p>
         </div>
       </div>
     );
@@ -204,66 +206,68 @@ export default function CompilerPage() {
 
   if (error || !problem) {
     return (
-      <div className="h-screen bg-[#050505] flex items-center justify-center">
+      <div className="h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <XCircle size={40} className="text-[#EF4444] mx-auto mb-4" />
-          <p className="text-[#EF4444] mb-4">{error || 'Problem not found'}</p>
-          <button
+          <XCircle size={40} className="text-destructive mx-auto mb-4" />
+          <p className="text-destructive mb-4">{error || 'Problem not found'}</p>
+          <Button
             onClick={() => router.back()}
-            className="px-4 py-2 bg-[#C6FE1E] text-black font-bold rounded-lg hover:bg-[#b5ed0d]"
+            variant="default"
           >
             Go Back
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-[#050505] flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left Panel - Problem Description */}
-        <div className="w-[40%] border-r border-[#262626]/50 flex flex-col">
+        <div className="w-[40%] border-r border-border flex flex-col bg-card/50">
           
           {/* Back to Dashboard Button */}
-          <div className="p-4 border-b border-[#262626]/50 flex gap-2">
-            <button
+          <div className="p-4 border-b border-border flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => router.push('/dashboard')}
-              className="inline-flex items-center gap-2 text-[#C6FE1E] hover:text-black bg-[#181818] hover:bg-[#C6FE1E] border border-[#C6FE1E]/40 font-semibold rounded-lg px-4 py-2 transition-colors group"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
-              <span>Back to Dashboard</span>
-            </button>
+              <ChevronLeft size={16} className="mr-2" />
+              Back to Dashboard
+            </Button>
           </div>
 
-          <div className="p-6 border-b border-[#262626]/50 bg-[#0A0A0A]">
+          <div className="p-6 border-b border-border bg-card">
             <div className="flex items-center gap-3 mb-4">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${difficultyColors[problem.difficulty]}`}>
                 {problem.difficulty}
               </span>
-              <span className="text-xs text-[#71717A]">{problem.category}</span>
+              <span className="text-xs text-muted-foreground">{problem.category}</span>
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">{problem.title}</h1>
-            <p className="text-xs text-[#71717A]">{problem._count.testCases} test cases</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">{problem.title}</h1>
+            <p className="text-xs text-muted-foreground">{problem._count.testCases} test cases</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
             {/* Problem Description */}
             <div className="space-y-6">
               <div>
-                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Description</h3>
-                <p className="text-[#A1A1AA] leading-relaxed text-sm">
+                <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Description</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm">
                   {problem.description}
                 </p>
               </div>
 
               {/* Schema */}
               <div>
-                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Schema</h3>
-                <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4">
-                  <pre className="text-xs font-mono text-[#71717A] overflow-x-auto whitespace-pre-wrap break-words">
+                <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Schema</h3>
+                <div className="bg-muted/50 border border-border rounded-xl p-4">
+                  <pre className="text-xs font-mono text-muted-foreground overflow-x-auto whitespace-pre-wrap break-words">
                     {problem.schema}
                   </pre>
                 </div>
@@ -271,9 +275,9 @@ export default function CompilerPage() {
 
               {/* Sample Data */}
               <div>
-                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Sample Data</h3>
-                <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4">
-                  <pre className="text-xs font-mono text-[#71717A] overflow-x-auto">
+                <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Sample Data</h3>
+                <div className="bg-muted/50 border border-border rounded-xl p-4">
+                  <pre className="text-xs font-mono text-muted-foreground overflow-x-auto">
                     {problem.sampleData}
                   </pre>
                 </div>
@@ -281,9 +285,9 @@ export default function CompilerPage() {
 
               {/* Solution */}
               <div>
-                <h3 className="text-sm font-bold text-white mb-3 uppercase tracking-wider">Solution</h3>
-                <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-xl p-4">
-                  <pre className="text-xs font-mono text-[#C6FE1E] overflow-x-auto">
+                <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Solution</h3>
+                <div className="bg-muted/50 border border-border rounded-xl p-4">
+                  <pre className="text-xs font-mono text-primary overflow-x-auto">
                     {problem.solution}
                   </pre>
                 </div>
@@ -293,50 +297,55 @@ export default function CompilerPage() {
         </div>
 
         {/* Right Panel - Code Editor */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col bg-background">
           
           {/* Editor Header */}
-          <div className="h-12 px-4 flex items-center justify-between border-b border-[#262626]/50 bg-[#0A0A0A]">
-            <span className="text-xs font-semibold text-[#71717A] uppercase tracking-wider">SQL Editor</span>
+          <div className="h-12 px-4 flex items-center justify-between border-b border-border bg-card">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">SQL Editor</span>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleReset}
-                className="px-3 py-1.5 text-xs font-semibold text-[#71717A] hover:text-white hover:bg-[#1A1A1A] rounded-lg transition-all flex items-center gap-1.5"
+                className="h-8 text-xs text-muted-foreground hover:text-foreground"
               >
-                <RotateCcw size={14} />
+                <RotateCcw size={14} className="mr-1.5" />
                 Reset
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleRun}
                 disabled={isRunning}
-                className="px-4 py-1.5 bg-[#0A0A0A] border border-[#262626] text-white text-xs font-bold rounded-lg hover:bg-[#1A1A1A] transition-all flex items-center gap-1.5 disabled:opacity-50"
+                className="h-8 text-xs font-bold"
               >
                 {isRunning ? (
                   <>
-                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <Loader size={14} className="animate-spin mr-1.5" />
                     Running
                   </>
                 ) : (
                   <>
-                    <Play size={14} />
+                    <Play size={14} className="mr-1.5" />
                     Run
                   </>
                 )}
-              </button>
-              <button
+              </Button>
+              <Button
+                size="sm"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="px-4 py-1.5 bg-[#C6FE1E] text-black text-xs font-bold rounded-lg hover:bg-[#b5ed0d] transition-all flex items-center gap-1.5 disabled:opacity-50"
+                className="h-8 text-xs font-bold"
               >
                 {isSubmitting ? (
                   <>
-                    <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <Loader size={14} className="animate-spin mr-1.5" />
                     Submitting
                   </>
                 ) : (
                   "Submit"
                 )}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -344,15 +353,15 @@ export default function CompilerPage() {
           <textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="flex-1 w-full p-6 bg-[#050505] text-[#A1A1AA] font-mono text-sm resize-none focus:outline-none custom-scrollbar"
+            className="flex-1 w-full p-6 bg-background text-foreground font-mono text-sm resize-none focus:outline-none custom-scrollbar"
             placeholder="Write your SQL query here..."
             spellCheck={false}
           />
 
           {/* Output Panel */}
-          <div className="border-t border-[#262626]/50">
+          <div className="border-t border-border bg-card">
             {/* Tabs */}
-            <div className="flex items-center border-b border-[#262626]/50 bg-[#0A0A0A]">
+            <div className="flex items-center border-b border-border">
 
               <button
                 onClick={() => {
@@ -361,8 +370,8 @@ export default function CompilerPage() {
                 }}
                 className={`px-4 py-2.5 text-xs font-semibold transition-all ${
                   activeTab === "testcase"
-                    ? "text-white border-b-2 border-[#C6FE1E]"
-                    : "text-[#71717A] hover:text-white"
+                    ? "text-foreground border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Testcase
@@ -374,8 +383,8 @@ export default function CompilerPage() {
                 }}
                 className={`px-4 py-2.5 text-xs font-semibold transition-all ${
                   activeTab === "result"
-                    ? "text-white border-b-2 border-[#C6FE1E]"
-                    : "text-[#71717A] hover:text-white"
+                    ? "text-foreground border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Result
@@ -387,15 +396,15 @@ export default function CompilerPage() {
                 }}
                 className={`px-4 py-2.5 text-xs font-semibold transition-all ${
                   activeTab === "console"
-                    ? "text-white border-b-2 border-[#C6FE1E]"
-                    : "text-[#71717A] hover:text-white"
+                    ? "text-foreground border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 Console {consoleOutput.length > 0 && `(${consoleOutput.length})`}
               </button>
               <button 
                 onClick={() => setShowTestCases(!showTestCases)}
-                className="ml-auto px-4 text-[#71717A] hover:text-white transition-colors"
+                className="ml-auto px-4 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showTestCases ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </button>
@@ -403,10 +412,10 @@ export default function CompilerPage() {
 
             {/* Output Content */}
             {showTestCases && (
-              <div className="h-64 overflow-y-auto p-4 bg-[#050505] custom-scrollbar">
+              <div className="h-64 overflow-y-auto p-4 bg-background custom-scrollbar">
                 {activeTab === "testcase" ? (
                   !testResults ? (
-                    <div className="flex items-center justify-center h-full text-[#71717A] text-sm">
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                       <div className="text-center">
                         <CheckCircle2 size={32} className="mx-auto mb-2 opacity-50" />
                         <p>Submit your solution to run test cases</p>
@@ -415,10 +424,10 @@ export default function CompilerPage() {
                   ) : (
                     <div className="space-y-3">
                       <div className="flex items-center justify-between mb-4">
-                        <div className={`text-sm font-bold ${testResults.passed === testResults.total ? 'text-[#C6FE1E]' : 'text-[#FCD34D]'}`}>
+                        <div className={`text-sm font-bold ${testResults.passed === testResults.total ? 'text-green-500' : 'text-yellow-500'}`}>
                           {testResults.passed === testResults.total ? (
                             <div className="flex items-center gap-2">
-                              <CheckCircle2 size={20} className="text-[#C6FE1E]" />
+                              <CheckCircle2 size={20} className="text-green-500" />
                               <span>All test cases passed!</span>
                             </div>
                           ) : (
@@ -432,25 +441,25 @@ export default function CompilerPage() {
                             key={testCase.id}
                             className={`p-4 rounded-lg border ${
                               testCase.passed
-                                ? "bg-[#C6FE1E]/5 border-[#C6FE1E]/20"
-                                : "bg-[#EF4444]/5 border-[#EF4444]/20"
+                                ? "bg-green-500/5 border-green-500/20"
+                                : "bg-red-500/5 border-red-500/20"
                             }`}
                           >
                             <div className="flex items-center justify-between mb-2">
                               <div className="flex items-center gap-2">
                                 {testCase.passed ? (
-                                  <CheckCircle2 size={16} className="text-[#C6FE1E]" />
+                                  <CheckCircle2 size={16} className="text-green-500" />
                                 ) : (
-                                  <XCircle size={16} className="text-[#EF4444]" />
+                                  <XCircle size={16} className="text-red-500" />
                                 )}
-                                <span className="text-sm font-semibold text-white">
+                                <span className="text-sm font-semibold text-foreground">
                                   {testCase.name}
                                 </span>
                               </div>
-                              <span className="text-xs text-[#71717A]">{testCase.time}</span>
+                              <span className="text-xs text-muted-foreground">{testCase.time}</span>
                             </div>
                             {!testCase.passed && testCase.error && (
-                              <div className="mt-2 text-xs text-[#EF4444] font-mono">
+                              <div className="mt-2 text-xs text-red-500 font-mono">
                                 {testCase.error}
                               </div>
                             )}
@@ -461,7 +470,7 @@ export default function CompilerPage() {
                   )
                 ) : activeTab === "result" ? (
                   !output ? (
-                    <div className="flex items-center justify-center h-full text-[#71717A] text-sm">
+                    <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
                       <div className="text-center">
                         <Play size={32} className="mx-auto mb-2 opacity-50" />
                         <p>Run your query to see results</p>
@@ -469,16 +478,16 @@ export default function CompilerPage() {
                     </div>
                   ) : output.success && output.rows ? (
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between text-xs text-[#71717A]">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{output.rows.length} rows returned</span>
                         <span>Execution time: {output.executionTime}</span>
                       </div>
-                      <div className="bg-[#0A0A0A] border border-[#262626]/50 rounded-lg overflow-hidden">
+                      <div className="bg-card border border-border rounded-lg overflow-hidden">
                         <table className="w-full text-xs">
                           <thead>
-                            <tr className="border-b border-[#262626]/50">
+                            <tr className="border-b border-border">
                               {output.rows.length > 0 && Object.keys(output.rows[0]).map((key) => (
-                                <th key={key} className="px-4 py-2 text-left font-semibold text-[#71717A] bg-[#111]">
+                                <th key={key} className="px-4 py-2 text-left font-semibold text-muted-foreground bg-muted/50">
                                   {key}
                                 </th>
                               ))}
@@ -486,9 +495,9 @@ export default function CompilerPage() {
                           </thead>
                           <tbody>
                             {output.rows.map((row: any, i: number) => (
-                              <tr key={i} className="border-b border-[#262626]/30 hover:bg-[#0A0A0A] transition-colors">
+                              <tr key={i} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                                 {Object.values(row).map((val: any, j: number) => (
-                                  <td key={j} className="px-4 py-2 text-[#A1A1AA] font-mono">
+                                  <td key={j} className="px-4 py-2 text-foreground font-mono">
                                     {String(val)}
                                   </td>
                                 ))}
@@ -500,19 +509,19 @@ export default function CompilerPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-[#EF4444]">
+                      <div className="flex items-center gap-2 text-destructive">
                         <XCircle size={16} />
                         <span className="text-sm font-semibold">Query Error</span>
                       </div>
-                      <div className="bg-[#0A0A0A] border border-[#EF4444]/20 rounded-lg p-4">
-                        <pre className="text-xs text-[#EF4444] font-mono whitespace-pre-wrap break-words">{output.error}</pre>
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                        <pre className="text-xs text-destructive font-mono whitespace-pre-wrap break-words">{output.error}</pre>
                       </div>
                     </div>
                   )
                 ) : activeTab === "console" ? (
-                  <div className="h-full overflow-y-auto font-mono text-xs text-[#C6FE1E] bg-[#0A0A0A] rounded-lg p-2">
+                  <div className="h-full overflow-y-auto font-mono text-xs text-primary bg-card rounded-lg p-2">
                     {consoleOutput.length === 0 ? (
-                      <div className="text-[#71717A]">No console output yet.</div>
+                      <div className="text-muted-foreground">No console output yet.</div>
                     ) : (
                       consoleOutput.map((line, idx) => (
                         <div key={idx}>{line}</div>

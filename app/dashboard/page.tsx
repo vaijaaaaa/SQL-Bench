@@ -1,8 +1,10 @@
 "use client"
 import Link from "next/link";
-import { ChevronRight, Database, BookOpen, GitMerge, Search } from "lucide-react";
+import { ChevronRight, Database, BookOpen, GitMerge, Search, ArrowLeft, Trophy, Activity, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import { motion } from "motion/react";
+import { Button } from "@/components/ui/button";
+import { FlickeringGrid } from "@/components/ui/flickering-grid";
 
 const sections = [
   {
@@ -10,7 +12,8 @@ const sections = [
     title: "SQL 50",
     description: "Master fundamental SQL concepts with 50 essential problems",
     icon: Database,
-    color: "from-[#C6FE1E] to-[#a8d617]",
+    color: "text-chart-1",
+    bg: "bg-chart-1/10",
     href: "/sql50",
     category: "SQL 50"
   },
@@ -18,8 +21,9 @@ const sections = [
     id: "sql75",
     title: "SQL 75",
     description: "Advanced SQL challenges for experienced developers",
-    icon: BookOpen,
-    color: "from-blue-500 to-blue-600",
+    icon: Trophy,
+    color: "text-chart-2",
+    bg: "bg-chart-2/10",
     href: "/sql75",
     category: "SQL 75"
   },
@@ -28,7 +32,8 @@ const sections = [
     title: "Joins",
     description: "Master INNER, LEFT, RIGHT, FULL joins and complex relationships",
     icon: GitMerge,
-    color: "from-purple-500 to-purple-600",
+    color: "text-chart-3",
+    bg: "bg-chart-3/10",
     href: "/joins",
     category: "Joins"
   },
@@ -37,14 +42,12 @@ const sections = [
     title: "Self Queries",
     description: "Advanced self-join patterns and recursive queries",
     icon: Search,
-    color: "from-orange-500 to-orange-600",
+    color: "text-chart-4",
+    bg: "bg-chart-4/10",
     href: "/selfquery",
     category: "Self Queries"
   }
 ];
-
-
-
 
 export default function DashboardPage() {
   const [progressData, setProgressData] = useState<any[]>([]);
@@ -100,120 +103,196 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#050505]">
-        <span className="text-lg text-[#A1A1A1]">Loading...</span>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <span className="text-lg text-muted-foreground animate-pulse">Loading workspace...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] pt-24 pb-20">
-      <div className="max-w-6xl mx-auto px-6">
+    <div className="min-h-screen bg-background pt-24 pb-20 relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <FlickeringGrid
+          className="w-full h-full opacity-10"
+          squareSize={4}
+          gridGap={6}
+          color="#C6FE1E"
+          maxOpacity={0.1}
+          flickerChance={0.1}
+        />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
         
-        {/* Back Button */}
-        <div className="mb-6">
-          <button
-            onClick={() => window.location.assign("/")}
-            className="inline-flex items-center gap-2 text-[#C6FE1E] hover:text-black bg-[#181818] hover:bg-[#C6FE1E] border border-[#C6FE1E]/40 font-semibold rounded-lg px-4 py-2 transition-colors group"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" className="group-hover:-translate-x-1 transition-transform">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Back</span>
-          </button>
-        </div>
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-white mb-3">Dashboard</h1>
-          <p className="text-[#71717A] text-lg">Track your progress across all SQL topics</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-12"
+        >
+          <div className="flex items-center gap-4 mb-6">
+            <Button variant="outline" size="icon" onClick={() => window.location.assign("/")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-4xl font-bold text-foreground">Dashboard</h1>
+          </div>
+          <p className="text-muted-foreground text-lg max-w-2xl">
+            Track your progress, analyze your performance, and master SQL concepts through our structured curriculum.
+          </p>
+        </motion.div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl">
-            <div className="text-[#71717A] text-sm font-medium mb-2">Total Problems</div>
-            <div className="text-3xl font-bold text-white">{totalProblems}</div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12"
+        >
+          <div className="p-6 bg-card border border-border rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                <Database size={18} />
+              </div>
+              <div className="text-muted-foreground text-sm font-medium">Total Problems</div>
+            </div>
+            <div className="text-3xl font-bold text-foreground">{totalProblems}</div>
           </div>
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl">
-            <div className="text-[#71717A] text-sm font-medium mb-2">Completed</div>
-            <div className="text-3xl font-bold text-[#C6FE1E]">{totalCompleted}</div>
+          <div className="p-6 bg-card border border-border rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
+                <CheckCircle2 size={18} />
+              </div>
+              <div className="text-muted-foreground text-sm font-medium">Completed</div>
+            </div>
+            <div className="text-3xl font-bold text-foreground">{totalCompleted}</div>
           </div>
-          <div className="p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl">
-            <div className="text-[#71717A] text-sm font-medium mb-2">Progress</div>
-            <div className="text-3xl font-bold text-white">{completionPercentage}%</div>
+          <div className="p-6 bg-card border border-border rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+                <Activity size={18} />
+              </div>
+              <div className="text-muted-foreground text-sm font-medium">Progress</div>
+            </div>
+            <div className="text-3xl font-bold text-foreground">{completionPercentage}%</div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Progress Bar */}
-        <div className="mb-12 p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-sm font-semibold text-[#71717A] uppercase tracking-wider">Overall Progress</span>
-            <span className="text-sm font-bold text-white">{totalCompleted}/{totalProblems}</span>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-12 p-8 bg-card border border-border rounded-3xl shadow-sm relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Trophy size={120} />
           </div>
-          <div className="w-full h-2 bg-[#1A1A1A] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#C6FE1E] transition-all duration-700" 
-              style={{ width: `${completionPercentage}%` }}
-            />
-          </div>
-        </div>
-
-       <div className="space-y-4">
-  {sections.map((section) => {
-    const Icon = section.icon;
-    const stats = sectionStats[section.category] || { total: 0, solved: 0 };
-    const progress = stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0;
-    return (
-      <Link
-        key={section.id}
-        href={section.href}
-        className="group block p-6 bg-[#0A0A0A] border border-[#262626]/50 rounded-2xl hover:border-[#C6FE1E]/30 transition-all"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4 flex-1">
-            {/* Icon */}
-            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${section.color} flex items-center justify-center flex-shrink-0`}>
-              <Icon size={28} className="text-white" />
-            </div>
-            {/* Content */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-xl font-bold text-white group-hover:text-[#C6FE1E] transition-colors">
-                  {section.title}
-                </h3>
-                <span className="text-xs text-[#71717A] font-medium">
-                  {stats.total} problems
-                </span>
+          <div className="relative z-10">
+            <div className="flex justify-between items-end mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-foreground mb-1">Overall Progress</h3>
+                <p className="text-sm text-muted-foreground">Keep pushing! You're doing great.</p>
               </div>
-              <p className="text-sm text-[#71717A] mb-3">{section.description}</p>
-              {/* Progress */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 max-w-xs">
-                  <div className="h-1.5 bg-[#1A1A1A] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-[#C6FE1E] transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
+              <span className="text-2xl font-bold text-primary">{totalCompleted}/{totalProblems}</span>
+            </div>
+            <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-1000 ease-out" 
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Learning Tracks */}
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.3
+              }
+            }
+          }}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
+          {sections.map((section) => {
+            const Icon = section.icon;
+            const stats = sectionStats[section.category] || { total: 0, solved: 0 };
+            const progress = stats.total > 0 ? Math.round((stats.solved / stats.total) * 100) : 0;
+            
+            return (
+              <motion.div
+                key={section.id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  visible: { opacity: 1, y: 0 }
+                }}
+              >
+                <Link
+                  href={section.href}
+                  className="group block h-full p-6 bg-card border border-border rounded-3xl hover:border-primary/50 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-start justify-between mb-6">
+                    <div className={`w-12 h-12 rounded-2xl ${section.bg} flex items-center justify-center ${section.color}`}>
+                      <Icon size={24} />
+                    </div>
+                    <div className="p-2 rounded-full bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <ChevronRight size={20} />
+                    </div>
                   </div>
-                </div>
-                <span className="text-xs font-bold text-[#71717A]">
-                  {stats.solved}/{stats.total}
-                </span>
-              </div>
-            </div>
-          </div>
-          {/* Arrow */}
-          <ChevronRight
-            size={24}
-            className="text-[#262626] group-hover:text-[#C6FE1E] group-hover:translate-x-1 transition-all flex-shrink-0 ml-4"
-          />
-        </div>
-      </Link>
-    );
-  })}
-</div>
-
+                  
+                  <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {section.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm mb-6 line-clamp-2">
+                    {section.description}
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                      <span>Progress</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-primary transition-all duration-500`}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       </div>
     </div>
   );
+}
+
+function CheckCircle2({ size, className }: { size?: number, className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size || 24} 
+      height={size || 24} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  )
 }

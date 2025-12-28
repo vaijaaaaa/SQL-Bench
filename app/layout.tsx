@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import { ThemeProvider } from "@/components/theme-provider";
 
-const montserrat = Montserrat({
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-montserrat",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
-  title: "SQLBench - Learn SQL by Practice",
-  description: "Master SQL through hands-on problem solving",
+  title: "SQLBench - Master SQL",
+  description: "The industrial-grade SQL practice platform.",
 };
 
 export default function RootLayout({
@@ -21,11 +21,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${montserrat.variable} font-sans antialiased bg-transparent`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased bg-background text-foreground selection:bg-primary selection:text-primary-foreground`}>
         <SessionProviderWrapper>
-          <Navbar/>
-          {children}
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <Navbar/>
+            {children}
+          </ThemeProvider>
         </SessionProviderWrapper>
       </body>
     </html>
