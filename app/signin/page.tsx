@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -12,7 +12,7 @@ import { Zap, Mail, Terminal, ArrowRight, Loader2 } from "lucide-react"
 import { FlickeringGrid } from "@/components/ui/flickering-grid"
 import { motion } from "motion/react"
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const registered = searchParams.get("registered")
@@ -203,5 +203,13 @@ export default function SignInPage() {
             </div>
       </div>
     </div>
+  )
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader2 className="animate-spin" /></div>}>
+      <SignInContent />
+    </Suspense>
   )
 }
