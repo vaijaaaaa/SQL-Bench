@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
-import { submissionQueue } from '@/lib/queue/submission-queue';
 import { executeSQLQuery } from '@/lib/sql-executor';
 import { checkRateLimit } from '@/lib/rate-limiter';
 
