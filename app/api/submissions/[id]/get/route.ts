@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 // GET /api/submissions/sub_123/get
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // STEP 1: Get user session (must be logged in)
@@ -32,7 +32,7 @@ export async function GET(
     }
 
     // STEP 3: Get submission ID from URL parameter
-    const submissionId = params.id;
+    const { id: submissionId } = await params;
 
     // STEP 4: Fetch submission with all details
     const submission = await prisma.submission.findUnique({
