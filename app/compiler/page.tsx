@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Play, RotateCcw, CheckCircle2, XCircle, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Maximize2, Loader } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ interface TestCase {
   isHidden: boolean;
 }
 
-export default function CompilerPage() {
+function CompilerContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -691,5 +691,13 @@ export default function CompilerPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function CompilerPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><Loader className="animate-spin" /></div>}>
+      <CompilerContent />
+    </Suspense>
   );
 }
