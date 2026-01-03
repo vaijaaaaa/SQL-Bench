@@ -12,13 +12,6 @@ import { Zap, Mail, Terminal, ArrowRight, Loader2 } from "lucide-react"
 import { FlickeringGrid } from "@/components/ui/flickering-grid"
 import { motion } from "motion/react"
 
-// Hide navbar on this page
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.innerHTML = 'nav { display: none !important; }';
-  document.head.appendChild(style);
-}
-
 export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()

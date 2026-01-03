@@ -8,11 +8,10 @@ import { motion } from "motion/react";
 export default function Home() {
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground overflow-x-hidden">
-      
-      {/* Background Effects */}
+
       <div className="fixed inset-0 z-0 pointer-events-none">
         <FlickeringGrid
-          className="w-full h-full opacity-20 dark:opacity-20 opacity-10"
+          className="w-full h-full opacity-10 dark:opacity-20"
           squareSize={4}
           gridGap={6}
           color="#C6FE1E"
@@ -22,26 +21,13 @@ export default function Home() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* HERO SECTION */}
+
       <section className="relative z-10 pt-32 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center text-center mb-16">
             
-            {/* Badge */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold tracking-wider uppercase mb-8"
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              Live SQL Execution Environment
-            </motion.div>
 
-            {/* Headline */}
+
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -54,7 +40,7 @@ export default function Home() {
               </span>
             </motion.h1>
 
-            {/* Subheadline */}
+  
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -66,7 +52,7 @@ export default function Home() {
               Real-time execution. Zero setup.
             </motion.p>
 
-            {/* CTAs */}
+   
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -89,7 +75,7 @@ export default function Home() {
             </motion.div>
           </div>
 
-          {/* Code Window Mockup */}
+        
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
@@ -98,7 +84,7 @@ export default function Home() {
           >
             <div className="absolute -inset-1 bg-gradient-to-b from-primary/20 to-transparent rounded-2xl blur-xl opacity-50" />
             <div className="relative bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
-              {/* Window Header */}
+    
               <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#EF4444]" />
@@ -108,7 +94,7 @@ export default function Home() {
                 <div className="text-xs font-mono text-muted-foreground">main.sql</div>
                 <div className="w-16" /> 
               </div>
-              {/* Code Content */}
+          
               <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
                 <div className="p-6 font-mono text-sm bg-card">
                   <div className="text-muted-foreground mb-2">-- Find top 3 users by points</div>
@@ -155,7 +141,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FEATURES BENTO GRID */}
+
       <section className="relative z-10 py-24 px-6">
         <div className="max-w-7xl mx-auto">
           <motion.div 
@@ -184,7 +170,7 @@ export default function Home() {
             }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {/* Card 1: SQL 50 */}
+          
             <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
               <Link href="/sql50" className="block h-full group relative p-8 bg-card border border-border rounded-3xl hover:border-primary/50 transition-all overflow-hidden shadow-sm hover:shadow-md">
                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity text-foreground">
@@ -205,7 +191,7 @@ export default function Home() {
               </Link>
             </motion.div>
 
-            {/* Card 2: SQL 75 */}
+       
             <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="md:col-span-2">
               <Link href="/sql75" className="block h-full group relative p-8 bg-card border border-border rounded-3xl hover:border-primary/50 transition-all overflow-hidden shadow-sm hover:shadow-md">
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -223,7 +209,7 @@ export default function Home() {
                       Challenge Yourself <ArrowRight size={14} />
                     </div>
                   </div>
-                  {/* Mini Graph Visual */}
+        
                   <div className="hidden md:block w-64 h-32 bg-muted/30 rounded-xl border border-border p-4 relative overflow-hidden">
                     <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-primary/20 to-transparent" />
                     <div className="flex items-end justify-between h-full gap-2">
@@ -238,7 +224,7 @@ export default function Home() {
               </Link>
             </motion.div>
 
-            {/* Card 3: Real-time Execution */}
+       
             <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="md:col-span-2">
               <div className="h-full group relative p-8 bg-card border border-border rounded-3xl hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
                 <div className="relative z-10">
@@ -254,7 +240,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Card 4: Progress Tracking */}
+          
             <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
               <div className="h-full group relative p-8 bg-card border border-border rounded-3xl hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
                 <div className="relative z-10">
@@ -272,7 +258,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* STATS SECTION */}
+
       <section className="py-20 border-y border-border bg-muted/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div 
@@ -302,7 +288,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FOOTER */}
+
       <footer className="py-12 px-6 border-t border-border bg-background">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">

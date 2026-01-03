@@ -46,6 +46,7 @@ export default function CompilerPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTestCaseId, setActiveTestCaseId] = useState<string | null>(null);
   const [showSolution, setShowSolution] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
 
   const difficultyColors: Record<string, string> = {
     EASY: "text-green-500 bg-green-500/10 border-green-500/20",
@@ -141,8 +142,23 @@ export default function CompilerPage() {
     const problemId = searchParams.get('problemId');
     if (problemId) {
       fetchProblem(problemId);
+      checkProgress(problemId);
     }
   }, [searchParams]);
+
+  const checkProgress = async (problemId: string) => {
+    try {
+      const res = await fetch(`/api/user/progress?problemId=${problemId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'SOLVED') {
+          setIsSolved(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check progress:', error);
+    }
+  };
 
   const fetchProblem = async (problemId: string) => {
     try {
@@ -252,9 +268,16 @@ export default function CompilerPage() {
       const result = await response.json();
       
       if (result.testResults) {
+        const passedCount = result.testResults.filter((t: any) => t.passed).length;
+        const totalCount = result.testResults.length;
+        
+        if (passedCount === totalCount && totalCount > 0) {
+          setIsSolved(true);
+        }
+
         setTestResults({
-          passed: result.testResults.filter((t: any) => t.passed).length,
-          total: result.testResults.length,
+          passed: passedCount,
+          total: totalCount,
           cases: result.testResults.map((t: any, idx: number) => ({
             id: idx + 1,
             name: `Test Case ${idx + 1}`,
@@ -381,6 +404,12 @@ export default function CompilerPage() {
               <Badge variant="secondary" className="text-xs font-normal">
                 {problem.category}
               </Badge>
+              {isSolved && (
+                <div className="flex items-center gap-1 text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                  <CheckCircle2 size={12} />
+                  <span className="text-[10px] font-bold uppercase">Solved</span>
+                </div>
+              )}
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">{problem.title}</h1>
             

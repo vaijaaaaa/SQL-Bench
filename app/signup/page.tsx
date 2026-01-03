@@ -12,12 +12,6 @@ import { Zap, Mail, Terminal, ArrowRight, Loader2, User } from "lucide-react"
 import { FlickeringGrid } from "@/components/ui/flickering-grid"
 import { motion } from "motion/react"
 
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.innerHTML = 'nav { display: none !important; }';
-  document.head.appendChild(style);
-}
-
 export default function SignUpPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
