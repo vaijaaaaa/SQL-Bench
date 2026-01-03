@@ -45,6 +45,7 @@ export default function CompilerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTestCaseId, setActiveTestCaseId] = useState<string | null>(null);
+  const [showSolution, setShowSolution] = useState(false);
 
   const difficultyColors: Record<string, string> = {
     EASY: "text-green-500 bg-green-500/10 border-green-500/20",
@@ -446,12 +447,24 @@ export default function CompilerPage() {
 
               {/* Solution */}
               <div>
-                <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Solution</h3>
-                <div className="bg-muted/50 border border-border rounded-xl p-4">
-                  <pre className="text-xs font-mono text-primary overflow-x-auto">
-                    {problem.solution}
-                  </pre>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Solution</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowSolution(!showSolution)}
+                    className="h-7 text-xs"
+                  >
+                    {showSolution ? "Hide Solution" : "Show Solution"}
+                  </Button>
                 </div>
+                {showSolution && (
+                  <div className="bg-muted/50 border border-border rounded-xl p-4">
+                    <pre className="text-xs font-mono text-primary overflow-x-auto">
+                      {problem.solution}
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -570,12 +583,6 @@ export default function CompilerPage() {
                           if (tc.id !== activeTestCaseId) return null;
                           return (
                             <div key={tc.id} className="space-y-4">
-                              <div>
-                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Input</div>
-                                <div className="bg-muted/50 border border-border rounded-lg p-3 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
-                                  {tc.input}
-                                </div>
-                              </div>
                               <div>
                                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Expected Output</div>
                                 {renderExpectedOutput(tc.expected)}

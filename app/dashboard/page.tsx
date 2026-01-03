@@ -60,14 +60,14 @@ export default function DashboardPage() {
       try {
         const [progressRes, problemsRes] = await Promise.all([
           fetch("/api/user/progress"),
-          fetch("/api/problems")
+          fetch("/api/problems?limit=1000")
         ]);
         const progress = progressRes.ok ? await progressRes.json() : [];
-        let problems = problemsRes.ok ? await problemsRes.json() : [];
-        // Defensive: if problems is not an array, convert to array
-        if (!Array.isArray(problems)) {
-          problems = Object.values(problems);
-        }
+        const problemsData = problemsRes.ok ? await problemsRes.json() : { data: [] };
+        
+        // Handle the response structure { data: [...], pagination: {...} }
+        const problems = Array.isArray(problemsData.data) ? problemsData.data : [];
+        
         setProgressData(progress || []);
         setAllProblems(problems || []);
       } catch {
@@ -199,9 +199,11 @@ export default function DashboardPage() {
             </div>
             <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary transition-all duration-1000 ease-out" 
+                className="h-full bg-primary transition-all duration-1000 ease-out relative" 
                 style={{ width: `${completionPercentage}%` }}
-              />
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full h-full -translate-x-full animate-[shimmer_2s_infinite]" />
+              </div>
             </div>
           </div>
         </motion.div>
