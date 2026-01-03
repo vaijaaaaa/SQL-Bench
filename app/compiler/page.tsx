@@ -252,9 +252,13 @@ function CompilerContent() {
     }
 
     setIsSubmitting(true);
-    setActiveTab("testcase");
+    setActiveTab("console");
+    setConsoleOutput([]);
     
     try {
+      setConsoleOutput(prev => [...prev, "[INFO] Starting submission..."]);
+      setConsoleOutput(prev => [...prev, "[INFO] Running test cases..."]);
+
       const response = await fetch('/api/submissions/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -271,8 +275,21 @@ function CompilerContent() {
         const passedCount = result.testResults.filter((t: any) => t.passed).length;
         const totalCount = result.testResults.length;
         
+        setConsoleOutput(prev => [...prev, `[INFO] Test Results: ${passedCount}/${totalCount} passed`]);
+
         if (passedCount === totalCount && totalCount > 0) {
           setIsSolved(true);
+          setConsoleOutput(prev => [...prev, "[SUCCESS] ✓ All test cases passed!"]);
+          setConsoleOutput(prev => [...prev, "[SUCCESS] ✓ Problem marked as SOLVED"]);
+        } else {
+          setConsoleOutput(prev => [...prev, "[FAILED] ✗ Some test cases failed"]);
+          
+          // Show which test cases failed
+          result.testResults.forEach((t: any, idx: number) => {
+            if (!t.passed) {
+              setConsoleOutput(prev => [...prev, `[ERROR] Test Case ${idx + 1}: ${t.error || 'Output mismatch'}`]);
+            }
+          });
         }
 
         setTestResults({
@@ -286,6 +303,8 @@ function CompilerContent() {
             error: t.error
           }))
         });
+      } else if (result.error) {
+        setConsoleOutput(prev => [...prev, `[ERROR] ${result.error}`]);
       }
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Submission failed';
@@ -673,13 +692,29 @@ function CompilerContent() {
                     </div>
                   )
                 ) : activeTab === "console" ? (
-                  <div className="h-full overflow-y-auto font-mono text-xs text-primary bg-card rounded-lg p-2">
+                  <div className="h-full overflow-y-auto font-mono text-xs bg-card rounded-lg p-4 space-y-1">
                     {consoleOutput.length === 0 ? (
                       <div className="text-muted-foreground">No console output yet.</div>
                     ) : (
-                      consoleOutput.map((line, idx) => (
-                        <div key={idx}>{line}</div>
-                      ))
+                      consoleOutput.map((line, idx) => {
+                        const isError = line.includes('[ERROR]') || line.includes('[FAILED]');
+                        const isSuccess = line.includes('[SUCCESS]');
+                        const isInfo = line.includes('[INFO]');
+                        
+                        return (
+                          <div 
+                            key={idx} 
+                            className={`${
+                              isError ? 'text-red-500' : 
+                              isSuccess ? 'text-green-500' : 
+                              isInfo ? 'text-blue-500' : 
+                              'text-foreground'
+                            }`}
+                          >
+                            {line}
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 ) : null}
