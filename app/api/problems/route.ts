@@ -9,13 +9,13 @@ export async function GET(request:Request) {
                     request.headers.get('x-real-ip') ||
                     'unknown';
 
-        const retaLimit = await checkRateLimit(
+        const rateLimit = await checkRateLimit(
             `problems:${ip}`,
             100,
             60
         );
 
-        if (!retaLimit.allowed) {
+        if (!rateLimit.allowed) {
           return NextResponse.json(
             { error: 'Too many requests. Please slow down.' },
             { status: 429 }
@@ -135,7 +135,7 @@ export async function POST(request:Request){
     } catch (error) {
         console.error('Create Problem error:',error);
         return NextResponse.json(
-            {error : 'Failed to crete problem'},
+            {error : 'Failed to create problem'},
             {status: 500}
         );
     }

@@ -13,6 +13,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "SQLBench - Master SQL",
   description: "The industrial-grade SQL practice platform.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

@@ -45,11 +45,55 @@ export default function CompilerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTestCaseId, setActiveTestCaseId] = useState<string | null>(null);
+  const [showSolution, setShowSolution] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
 
   const difficultyColors: Record<string, string> = {
     EASY: "text-green-500 bg-green-500/10 border-green-500/20",
     MEDIUM: "text-yellow-500 bg-yellow-500/10 border-yellow-500/20",
     HARD: "text-red-500 bg-red-500/10 border-red-500/20"
+  };
+
+  const formatDescription = (text: string) => {
+    if (!text) return "";
+  
+    // Regex to match ASCII tables
+    // Matches blocks starting with +-, containing | lines, and ending with +-
+    const tableRegex = /^\s*\+[-+]+\s*$\n((?:^\s*[|+].+$\n)+)/gm;
+    
+    return text.replace(tableRegex, (match) => {
+      // Split into lines
+      const lines = match.trim().split('\n');
+      
+      // Filter out border lines (starting with +)
+      const contentLines = lines.filter(line => line.trim().startsWith('|'));
+      
+      if (contentLines.length === 0) return match;
+      
+      // Process header
+      const headerLine = contentLines[0];
+      const headers = headerLine.split('|')
+        .map(s => s.trim())
+        .filter(s => s.length > 0); 
+        
+      // Create separator
+      const separator = `| ${headers.map(() => '---').join(' | ')} |`;
+      
+      // Process rows
+      const rows = contentLines.map(line => {
+        const cells = line.split('|')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+        return `| ${cells.join(' | ')} |`;
+      });
+      
+      if (rows.length > 0) {
+         // Reconstruct: Header, Separator, Body (skipping first row which is header)
+         return `\n${rows[0]}\n${separator}\n${rows.slice(1).join('\n')}\n`;
+      }
+      
+      return match;
+    });
   };
 
   const renderExpectedOutput = (expected: string) => {
@@ -98,8 +142,23 @@ export default function CompilerPage() {
     const problemId = searchParams.get('problemId');
     if (problemId) {
       fetchProblem(problemId);
+      checkProgress(problemId);
     }
   }, [searchParams]);
+
+  const checkProgress = async (problemId: string) => {
+    try {
+      const res = await fetch(`/api/user/progress?problemId=${problemId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.status === 'SOLVED') {
+          setIsSolved(true);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check progress:', error);
+    }
+  };
 
   const fetchProblem = async (problemId: string) => {
     try {
@@ -209,9 +268,16 @@ export default function CompilerPage() {
       const result = await response.json();
       
       if (result.testResults) {
+        const passedCount = result.testResults.filter((t: any) => t.passed).length;
+        const totalCount = result.testResults.length;
+        
+        if (passedCount === totalCount && totalCount > 0) {
+          setIsSolved(true);
+        }
+
         setTestResults({
-          passed: result.testResults.filter((t: any) => t.passed).length,
-          total: result.testResults.length,
+          passed: passedCount,
+          total: totalCount,
           cases: result.testResults.map((t: any, idx: number) => ({
             id: idx + 1,
             name: `Test Case ${idx + 1}`,
@@ -338,6 +404,12 @@ export default function CompilerPage() {
               <Badge variant="secondary" className="text-xs font-normal">
                 {problem.category}
               </Badge>
+              {isSolved && (
+                <div className="flex items-center gap-1 text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
+                  <CheckCircle2 size={12} />
+                  <span className="text-[10px] font-bold uppercase">Solved</span>
+                </div>
+              )}
             </div>
             <h1 className="text-2xl font-bold text-foreground mb-2">{problem.title}</h1>
             
@@ -377,7 +449,7 @@ export default function CompilerPage() {
                       pre: ({node, ...props}) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4" {...props} />,
                     }}
                   >
-                    {problem.description}
+                    {formatDescription(problem.description)}
                   </ReactMarkdown>
                 </div>
               </div>
@@ -404,12 +476,24 @@ export default function CompilerPage() {
 
               {/* Solution */}
               <div>
-                <h3 className="text-sm font-bold text-foreground mb-3 uppercase tracking-wider">Solution</h3>
-                <div className="bg-muted/50 border border-border rounded-xl p-4">
-                  <pre className="text-xs font-mono text-primary overflow-x-auto">
-                    {problem.solution}
-                  </pre>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-bold text-foreground uppercase tracking-wider">Solution</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowSolution(!showSolution)}
+                    className="h-7 text-xs"
+                  >
+                    {showSolution ? "Hide Solution" : "Show Solution"}
+                  </Button>
                 </div>
+                {showSolution && (
+                  <div className="bg-muted/50 border border-border rounded-xl p-4">
+                    <pre className="text-xs font-mono text-primary overflow-x-auto">
+                      {problem.solution}
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -528,12 +612,6 @@ export default function CompilerPage() {
                           if (tc.id !== activeTestCaseId) return null;
                           return (
                             <div key={tc.id} className="space-y-4">
-                              <div>
-                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Input</div>
-                                <div className="bg-muted/50 border border-border rounded-lg p-3 font-mono text-xs overflow-x-auto whitespace-pre-wrap">
-                                  {tc.input}
-                                </div>
-                              </div>
                               <div>
                                 <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Expected Output</div>
                                 {renderExpectedOutput(tc.expected)}

@@ -9,7 +9,7 @@ export async function GET(request : Request){
 
         if(!session || !session.user?.email){
             return NextResponse.json(
-                {error : 'Unauthorized Please login first'},
+                {error : 'Unauthorized - Please login first'},
                 {status : 401}
             );
         }

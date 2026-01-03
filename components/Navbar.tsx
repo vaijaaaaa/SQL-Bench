@@ -12,7 +12,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  if (pathname.startsWith("/compiler")) {
+  if (pathname.startsWith("/compiler") || pathname === "/signin" || pathname === "/signup") {
     return null;
   }
 
