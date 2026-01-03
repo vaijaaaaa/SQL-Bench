@@ -52,6 +52,48 @@ export default function CompilerPage() {
     HARD: "text-red-500 bg-red-500/10 border-red-500/20"
   };
 
+  const formatDescription = (text: string) => {
+    if (!text) return "";
+  
+    // Regex to match ASCII tables
+    // Matches blocks starting with +-, containing | lines, and ending with +-
+    const tableRegex = /^\s*\+[-+]+\s*$\n((?:^\s*[|+].+$\n)+)/gm;
+    
+    return text.replace(tableRegex, (match) => {
+      // Split into lines
+      const lines = match.trim().split('\n');
+      
+      // Filter out border lines (starting with +)
+      const contentLines = lines.filter(line => line.trim().startsWith('|'));
+      
+      if (contentLines.length === 0) return match;
+      
+      // Process header
+      const headerLine = contentLines[0];
+      const headers = headerLine.split('|')
+        .map(s => s.trim())
+        .filter(s => s.length > 0); 
+        
+      // Create separator
+      const separator = `| ${headers.map(() => '---').join(' | ')} |`;
+      
+      // Process rows
+      const rows = contentLines.map(line => {
+        const cells = line.split('|')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+        return `| ${cells.join(' | ')} |`;
+      });
+      
+      if (rows.length > 0) {
+         // Reconstruct: Header, Separator, Body (skipping first row which is header)
+         return `\n${rows[0]}\n${separator}\n${rows.slice(1).join('\n')}\n`;
+      }
+      
+      return match;
+    });
+  };
+
   const renderExpectedOutput = (expected: string) => {
     try {
       const data = JSON.parse(expected);
@@ -377,7 +419,7 @@ export default function CompilerPage() {
                       pre: ({node, ...props}) => <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4" {...props} />,
                     }}
                   >
-                    {problem.description}
+                    {formatDescription(problem.description)}
                   </ReactMarkdown>
                 </div>
               </div>
