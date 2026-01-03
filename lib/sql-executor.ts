@@ -52,12 +52,23 @@ export async function executeSQLQuery (
 
         const executionTime = Date.now() - startTime;
 
+        // Format date columns to YYYY-MM-DD
+        const formattedRows = result.rows.map(row => {
+            const newRow = { ...row };
+            Object.keys(newRow).forEach(key => {
+                if (newRow[key] instanceof Date) {
+                    newRow[key] = newRow[key].toISOString().split('T')[0];
+                }
+            });
+            return newRow;
+        });
+
         await client.query(`DROP SCHEMA ${tempSchema} CASCADE`);
         await client.end();
 
         return {
             success : true,
-            rows : result.rows,
+            rows : formattedRows,
             executionTime,
     };
 
