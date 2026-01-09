@@ -262,73 +262,6 @@ Return the result table ordered by employee_id.
     ]
   },
   {
-    title: 'Swap Salary',
-    slug: 'swap-salary',
-    difficulty: 'EASY',
-    category: 'Basic Select',
-    companies: ['Uber', 'Apple'],
-    schema: `CREATE TABLE Salary (id int, name varchar(100), sex char(1), salary int);`,
-    sampleData: `INSERT INTO Salary VALUES (1, 'A', 'm', 2500), (2, 'B', 'f', 1500), (3, 'C', 'm', 5500), (4, 'D', 'f', 500);`,
-    solution: `UPDATE Salary SET sex = CASE WHEN sex = 'm' THEN 'f' ELSE 'm' END; SELECT * FROM Salary ORDER BY id;`,
-    description: `
-Table: Salary
-
-+-------------+----------+
-| Column Name | Type     |
-+-------------+----------+
-| id          | int      |
-| name        | varchar  |
-| sex         | ENUM     |
-| salary      | int      |
-+-------------+----------+
-id is the primary key for this table.
-The sex column is ENUM value of type ('m', 'f').
-The table contains information about an employee.
-
-Write an SQL query to swap all 'f' and 'm' values (i.e., change all 'f' values to 'm' and vice versa) with a single update statement and no intermediate temporary tables.
-
-Note that you must write a single update statement, do not write any select statement for this problem.
-    `,
-    testCases: [
-      {
-        input: `UPDATE Salary SET sex = CASE WHEN sex = 'm' THEN 'f' ELSE 'm' END; SELECT * FROM Salary ORDER BY id;`,
-        expected: JSON.stringify([{ id: 1, name: 'A', sex: 'f', salary: 2500 }, { id: 2, name: 'B', sex: 'm', salary: 1500 }, { id: 3, name: 'C', sex: 'f', salary: 5500 }, { id: 4, name: 'D', sex: 'm', salary: 500 }])
-      }
-    ]
-  },
-  {
-    title: 'Delete Duplicate Emails',
-    slug: 'delete-duplicate-emails',
-    difficulty: 'EASY',
-    category: 'Basic Select',
-    companies: ['Amazon', 'Uber'],
-    schema: `CREATE TABLE Person (id int, email varchar(255));`,
-    sampleData: `INSERT INTO Person VALUES (1, 'john@example.com'), (2, 'bob@example.com'), (3, 'john@example.com');`,
-    solution: `DELETE p1 FROM Person p1, Person p2 WHERE p1.email = p2.email AND p1.id > p2.id; SELECT * FROM Person ORDER BY id;`,
-    description: `
-Table: Person
-
-+-------------+---------+
-| Column Name | Type    |
-+-------------+---------+
-| id          | int     |
-| email       | varchar |
-+-------------+---------+
-id is the primary key column for this table.
-Each row of this table contains an email. The emails will not contain uppercase letters.
-
-Write an SQL query to delete all the duplicate emails, keeping only one unique email with the smallest id.
-
-Return the result table in any order.
-    `,
-    testCases: [
-      {
-        input: `DELETE p1 FROM Person p1, Person p2 WHERE p1.email = p2.email AND p1.id > p2.id; SELECT * FROM Person ORDER BY id;`,
-        expected: JSON.stringify([{ id: 1, email: 'john@example.com' }, { id: 2, email: 'bob@example.com' }])
-      }
-    ]
-  },
-  {
     title: 'Fix Names in a Table',
     slug: 'fix-names-in-a-table',
     difficulty: 'EASY',
@@ -708,34 +641,6 @@ Return the result table in any order.
     ]
   },
   {
-    title: 'Nth Highest Salary',
-    slug: 'nth-highest-salary',
-    difficulty: 'MEDIUM',
-    category: 'Window Functions',
-    companies: ['Amazon', 'Google'],
-    schema: `CREATE TABLE Employee (id int, salary int);`,
-    sampleData: `INSERT INTO Employee VALUES (1, 100), (2, 200), (3, 300);`,
-    solution: `CREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT BEGIN SET N = N - 1; RETURN (SELECT DISTINCT salary FROM Employee ORDER BY salary DESC LIMIT 1 OFFSET N); END`,
-    description: `
-Table: Employee
-
-+-------------+------+
-| Column Name | Type |
-+-------------+------+
-| id          | int  |
-| salary      | int  |
-+-------------+------+
-id is the primary key column for this table.
-Each row of this table contains information about the salary of an employee.
-
-Write an SQL query to report the nth highest salary from the Employee table. If there is no nth highest salary, the query should report null.
-
-The following is the definition of the function:
-CREATE FUNCTION getNthHighestSalary(N INT) RETURNS INT
-    `,
-    testCases: [] // Function creation is hard to test with simple query execution
-  },
-  {
     title: 'Rank Scores',
     slug: 'rank-scores',
     difficulty: 'MEDIUM',
@@ -956,6 +861,455 @@ Return the result table in any order.
         expected: JSON.stringify([{ id: 2 }, { id: 4 }])
       }
     ]
+  },
+  
+  // ==========================================
+  // ADDITIONAL PROBLEMS (Total: 40)
+  // ==========================================
+  {
+    title: 'Customer Who Visited but Did Not Make Any Transactions',
+    slug: 'customer-who-visited',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Amazon', 'Google'],
+    schema: `
+      CREATE TABLE Visits (visit_id int, customer_id int);
+      CREATE TABLE Transactions (transaction_id int, visit_id int, amount int);
+    `,
+    sampleData: `
+      INSERT INTO Visits VALUES (1, 23), (2, 9), (4, 30), (5, 54), (6, 96), (7, 54), (8, 54);
+      INSERT INTO Transactions VALUES (2, 5, 310), (3, 5, 300), (9, 5, 200), (12, 1, 910), (13, 2, 970);
+    `,
+    solution: `SELECT customer_id, COUNT(*) AS count_no_trans FROM Visits WHERE visit_id NOT IN (SELECT visit_id FROM Transactions) GROUP BY customer_id`,
+    description: `Write a query to find the IDs of the users who visited without making any transactions and the number of times they made these types of visits.`,
+    testCases: [
+      {
+        input: `SELECT customer_id, COUNT(*) AS count_no_trans FROM Visits WHERE visit_id NOT IN (SELECT visit_id FROM Transactions) GROUP BY customer_id`,
+        expected: JSON.stringify([
+          { customer_id: 54, count_no_trans: 2 },
+          { customer_id: 30, count_no_trans: 1 },
+          { customer_id: 96, count_no_trans: 1 }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Classes More Than 5 Students',
+    slug: 'classes-more-than-5-students',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Google', 'Amazon'],
+    schema: `CREATE TABLE Courses (student varchar(255), class varchar(255));`,
+    sampleData: `INSERT INTO Courses VALUES ('A', 'Math'), ('B', 'English'), ('C', 'Math'), ('D', 'Biology'), ('E', 'Math'), ('F', 'Computer'), ('G', 'Math'), ('H', 'Math'), ('I', 'Math');`,
+    solution: `SELECT class FROM Courses GROUP BY class HAVING COUNT(DISTINCT student) >= 5`,
+    description: `Write a query to find all the classes that have at least five students.`,
+    testCases: [
+      {
+        input: `SELECT class FROM Courses GROUP BY class HAVING COUNT(DISTINCT student) >= 5`,
+        expected: JSON.stringify([{ class: 'Math' }])
+      }
+    ]
+  },
+  {
+    title: 'Sales Person',
+    slug: 'sales-person',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Amazon', 'Apple'],
+    schema: `
+      CREATE TABLE SalesPerson (sales_id int, name varchar(255), salary int, commission_rate int, hire_date date);
+      CREATE TABLE Company (com_id int, name varchar(255), city varchar(255));
+      CREATE TABLE Orders (order_id int, order_date date, com_id int, sales_id int, amount int);
+    `,
+    sampleData: `
+      INSERT INTO SalesPerson VALUES (1, 'John', 100000, 6, '2006-04-01'), (2, 'Amy', 12000, 5, '2010-05-01'), (3, 'Mark', 65000, 12, '2008-12-25'), (4, 'Pam', 25000, 25, '2005-01-01'), (5, 'Alex', 5000, 10, '2007-02-03');
+      INSERT INTO Company VALUES (1, 'RED', 'Boston'), (2, 'ORANGE', 'New York'), (3, 'YELLOW', 'Boston'), (4, 'GREEN', 'Austin');
+      INSERT INTO Orders VALUES (1, '2014-01-01', 3, 4, 10000), (2, '2014-02-01', 4, 5, 5000), (3, '2014-03-01', 1, 1, 50000), (4, '2014-04-01', 1, 4, 25000);
+    `,
+    solution: `SELECT name FROM SalesPerson WHERE sales_id NOT IN (SELECT o.sales_id FROM Orders o JOIN Company c ON o.com_id = c.com_id WHERE c.name = 'RED')`,
+    description: `Write a query to report the names of all the salespersons who did not have any orders related to the company with the name "RED".`,
+    testCases: [
+      {
+        input: `SELECT name FROM SalesPerson WHERE sales_id NOT IN (SELECT o.sales_id FROM Orders o JOIN Company c ON o.com_id = c.com_id WHERE c.name = 'RED')`,
+        expected: JSON.stringify([{ name: 'Amy' }, { name: 'Mark' }, { name: 'Alex' }])
+      }
+    ]
+  },
+  {
+    title: 'Triangle Judgement',
+    slug: 'triangle-judgement',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Adobe', 'Google'],
+    schema: `CREATE TABLE Triangle (x int, y int, z int);`,
+    sampleData: `INSERT INTO Triangle VALUES (13, 15, 30), (10, 20, 15);`,
+    solution: `SELECT x, y, z, CASE WHEN x + y > z AND x + z > y AND y + z > x THEN 'Yes' ELSE 'No' END AS triangle FROM Triangle`,
+    description: `Write a query to report for every three line segments whether they can form a triangle.`,
+    testCases: [
+      {
+        input: `SELECT x, y, z, CASE WHEN x + y > z AND x + z > y AND y + z > x THEN 'Yes' ELSE 'No' END AS triangle FROM Triangle`,
+        expected: JSON.stringify([
+          { x: 13, y: 15, z: 30, triangle: 'No' },
+          { x: 10, y: 20, z: 15, triangle: 'Yes' }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Biggest Single Number',
+    slug: 'biggest-single-number',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Amazon', 'Google'],
+    schema: `CREATE TABLE MyNumbers (num int);`,
+    sampleData: `INSERT INTO MyNumbers VALUES (8), (8), (3), (3), (1), (4), (5), (6);`,
+    solution: `SELECT MAX(num) AS num FROM (SELECT num FROM MyNumbers GROUP BY num HAVING COUNT(num) = 1) AS single_numbers`,
+    description: `A single number is a number that appeared only once. Write a query to report the largest single number. If there is no single number, report null.`,
+    testCases: [
+      {
+        input: `SELECT MAX(num) AS num FROM (SELECT num FROM MyNumbers GROUP BY num HAVING COUNT(num) = 1) AS single_numbers`,
+        expected: JSON.stringify([{ num: 6 }])
+      }
+    ]
+  },
+  {
+    title: 'Customers Who Never Order',
+    slug: 'customers-who-never-order',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Amazon', 'Uber'],
+    schema: `
+      CREATE TABLE Customers (id int, name varchar(255));
+      CREATE TABLE Orders (id int, customerId int);
+    `,
+    sampleData: `
+      INSERT INTO Customers VALUES (1, 'Joe'), (2, 'Henry'), (3, 'Sam'), (4, 'Max');
+      INSERT INTO Orders VALUES (1, 3), (2, 1);
+    `,
+    solution: `SELECT name AS Customers FROM Customers WHERE id NOT IN (SELECT customerId FROM Orders)`,
+    description: `Write a query to report all customers who never order anything.`,
+    testCases: [
+      {
+        input: `SELECT name AS Customers FROM Customers WHERE id NOT IN (SELECT customerId FROM Orders)`,
+        expected: JSON.stringify([{ Customers: 'Henry' }, { Customers: 'Max' }])
+      }
+    ]
+  },
+  {
+    title: 'Game Play Analysis I',
+    slug: 'game-play-analysis-i',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Amazon', 'Bloomberg'],
+    schema: `CREATE TABLE Activity (player_id int, device_id int, event_date date, games_played int);`,
+    sampleData: `INSERT INTO Activity VALUES (1, 2, '2016-03-01', 5), (1, 2, '2016-05-02', 6), (2, 3, '2017-06-25', 1), (3, 1, '2016-03-02', 0), (3, 4, '2018-07-03', 5);`,
+    solution: `SELECT player_id, MIN(event_date) AS first_login FROM Activity GROUP BY player_id`,
+    description: `Write a query to report the first login date for each player.`,
+    testCases: [
+      {
+        input: `SELECT player_id, MIN(event_date) AS first_login FROM Activity GROUP BY player_id`,
+        expected: JSON.stringify([
+          { player_id: 1, first_login: '2016-03-01' },
+          { player_id: 2, first_login: '2017-06-25' },
+          { player_id: 3, first_login: '2016-03-02' }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Not Boring Movies',
+    slug: 'not-boring-movies',
+    difficulty: 'EASY',
+    category: 'Basic Select',
+    companies: ['Netflix', 'Amazon'],
+    schema: `CREATE TABLE Cinema (id int, movie varchar(255), description varchar(255), rating decimal(2,1));`,
+    sampleData: `INSERT INTO Cinema VALUES (1, 'War', 'great 3D', 8.9), (2, 'Science', 'fiction', 8.5), (3, 'irish', 'boring', 6.2), (4, 'Ice song', 'Fantacy', 8.6), (5, 'House card', 'Interesting', 9.1);`,
+    solution: `SELECT * FROM Cinema WHERE id % 2 = 1 AND description != 'boring' ORDER BY rating DESC`,
+    description: `Write a query to report the movies with an odd-numbered ID and a description that is not "boring". Return the result table ordered by rating in descending order.`,
+    testCases: [
+      {
+        input: `SELECT * FROM Cinema WHERE id % 2 = 1 AND description != 'boring' ORDER BY rating DESC`,
+        expected: JSON.stringify([
+          { id: 5, movie: 'House card', description: 'Interesting', rating: 9.1 },
+          { id: 1, movie: 'War', description: 'great 3D', rating: 8.9 }
+        ])
+      }
+    ]
+  },
+
+  // More Join Problems
+  {
+    title: 'Product Sales Analysis I',
+    slug: 'product-sales-analysis-i',
+    difficulty: 'EASY',
+    category: 'Inner Join',
+    companies: ['Amazon', 'Apple'],
+    schema: `
+      CREATE TABLE Sales (sale_id int, product_id int, year int, quantity int, price int);
+      CREATE TABLE Product (product_id int, product_name varchar(10));
+    `,
+    sampleData: `
+      INSERT INTO Sales VALUES (1, 100, 2008, 10, 5000), (2, 100, 2009, 12, 5000), (7, 200, 2011, 15, 9000);
+      INSERT INTO Product VALUES (100, 'Nokia'), (200, 'Apple'), (300, 'Samsung');
+    `,
+    solution: `SELECT p.product_name, s.year, s.price FROM Sales s JOIN Product p ON s.product_id = p.product_id`,
+    description: `Write a query to report the product_name, year, and price for each sale_id in the Sales table.`,
+    testCases: [
+      {
+        input: `SELECT p.product_name, s.year, s.price FROM Sales s JOIN Product p ON s.product_id = p.product_id`,
+        expected: JSON.stringify([
+          { product_name: 'Nokia', year: 2008, price: 5000 },
+          { product_name: 'Nokia', year: 2009, price: 5000 },
+          { product_name: 'Apple', year: 2011, price: 9000 }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Average Selling Price',
+    slug: 'average-selling-price',
+    difficulty: 'EASY',
+    category: 'Inner Join',
+    companies: ['Amazon', 'Uber'],
+    schema: `
+      CREATE TABLE Prices (product_id int, start_date date, end_date date, price int);
+      CREATE TABLE UnitsSold (product_id int, purchase_date date, units int);
+    `,
+    sampleData: `
+      INSERT INTO Prices VALUES (1, '2019-02-17', '2019-02-28', 5), (1, '2019-03-01', '2019-03-22', 20), (2, '2019-02-01', '2019-02-20', 15), (2, '2019-02-21', '2019-03-31', 30);
+      INSERT INTO UnitsSold VALUES (1, '2019-02-25', 100), (1, '2019-03-01', 15), (2, '2019-02-10', 200), (2, '2019-03-22', 30);
+    `,
+    solution: `SELECT p.product_id, ROUND(COALESCE(SUM(p.price * u.units)::decimal / NULLIF(SUM(u.units), 0), 0), 2) AS average_price FROM Prices p LEFT JOIN UnitsSold u ON p.product_id = u.product_id AND u.purchase_date BETWEEN p.start_date AND p.end_date GROUP BY p.product_id`,
+    description: `Write a query to find the average selling price for each product. average_price should be rounded to 2 decimal places.`,
+    testCases: [
+      {
+        input: `SELECT p.product_id, ROUND(COALESCE(SUM(p.price * u.units)::decimal / NULLIF(SUM(u.units), 0), 0), 2) AS average_price FROM Prices p LEFT JOIN UnitsSold u ON p.product_id = u.product_id AND u.purchase_date BETWEEN p.start_date AND p.end_date GROUP BY p.product_id`,
+        expected: JSON.stringify([
+          { product_id: 1, average_price: 6.96 },
+          { product_id: 2, average_price: 16.96 }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Customer Placing the Largest Number of Orders',
+    slug: 'customer-largest-orders',
+    difficulty: 'EASY',
+    category: 'Inner Join',
+    companies: ['Amazon', 'Uber'],
+    schema: `CREATE TABLE Orders (order_number int, customer_number int);`,
+    sampleData: `INSERT INTO Orders VALUES (1, 1), (2, 2), (3, 3), (4, 3);`,
+    solution: `SELECT customer_number FROM Orders GROUP BY customer_number ORDER BY COUNT(*) DESC LIMIT 1`,
+    description: `Write a query to find the customer_number for the customer who has placed the largest number of orders.`,
+    testCases: [
+      {
+        input: `SELECT customer_number FROM Orders GROUP BY customer_number ORDER BY COUNT(*) DESC LIMIT 1`,
+        expected: JSON.stringify([{ customer_number: 3 }])
+      }
+    ]
+  },
+
+  // More Window Function Problems
+  {
+    title: 'Exchange Seats',
+    slug: 'exchange-seats',
+    difficulty: 'MEDIUM',
+    category: 'Window Functions',
+    companies: ['Amazon', 'Bloomberg'],
+    schema: `CREATE TABLE Seat (id int, student varchar(255));`,
+    sampleData: `INSERT INTO Seat VALUES (1, 'Abbot'), (2, 'Doris'), (3, 'Emerson'), (4, 'Green'), (5, 'Jeames');`,
+    solution: `SELECT CASE WHEN id % 2 = 1 AND id = (SELECT MAX(id) FROM Seat) THEN id WHEN id % 2 = 1 THEN id + 1 ELSE id - 1 END AS id, student FROM Seat ORDER BY id`,
+    description: `Write a query to swap the seat id of every two consecutive students. If the number of students is odd, the id of the last student is not swapped.`,
+    testCases: [
+      {
+        input: `SELECT CASE WHEN id % 2 = 1 AND id = (SELECT MAX(id) FROM Seat) THEN id WHEN id % 2 = 1 THEN id + 1 ELSE id - 1 END AS id, student FROM Seat ORDER BY id`,
+        expected: JSON.stringify([
+          { id: 1, student: 'Doris' },
+          { id: 2, student: 'Abbot' },
+          { id: 3, student: 'Green' },
+          { id: 4, student: 'Emerson' },
+          { id: 5, student: 'Jeames' }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Human Traffic of Stadium',
+    slug: 'human-traffic-stadium',
+    difficulty: 'HARD',
+    category: 'Window Functions',
+    companies: ['Amazon', 'Google'],
+    schema: `CREATE TABLE Stadium (id int, visit_date date, people int);`,
+    sampleData: `INSERT INTO Stadium VALUES (1, '2017-01-01', 10), (2, '2017-01-02', 109), (3, '2017-01-03', 150), (4, '2017-01-04', 99), (5, '2017-01-05', 145), (6, '2017-01-06', 1455), (7, '2017-01-07', 199), (8, '2017-01-09', 188);`,
+    solution: `WITH ranked AS (SELECT id, visit_date, people, id - ROW_NUMBER() OVER (ORDER BY id) AS grp FROM Stadium WHERE people >= 100) SELECT id, visit_date, people FROM ranked WHERE grp IN (SELECT grp FROM ranked GROUP BY grp HAVING COUNT(*) >= 3) ORDER BY visit_date`,
+    description: `Write a query to display the records with three or more rows with consecutive ids, and the number of people is greater than or equal to 100 for each.`,
+    testCases: [
+      {
+        input: `WITH ranked AS (SELECT id, visit_date, people, id - ROW_NUMBER() OVER (ORDER BY id) AS grp FROM Stadium WHERE people >= 100) SELECT id, visit_date, people FROM ranked WHERE grp IN (SELECT grp FROM ranked GROUP BY grp HAVING COUNT(*) >= 3) ORDER BY visit_date`,
+        expected: JSON.stringify([
+          { id: 5, visit_date: '2017-01-05', people: 145 },
+          { id: 6, visit_date: '2017-01-06', people: 1455 },
+          { id: 7, visit_date: '2017-01-07', people: 199 },
+          { id: 8, visit_date: '2017-01-09', people: 188 }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Department Top Three Salaries',
+    slug: 'department-top-three-salaries',
+    difficulty: 'HARD',
+    category: 'Window Functions',
+    companies: ['Amazon', 'Apple'],
+    schema: `
+      CREATE TABLE Employee (id int, name varchar(255), salary int, departmentId int);
+      CREATE TABLE Department (id int, name varchar(255));
+    `,
+    sampleData: `
+      INSERT INTO Employee VALUES (1, 'Joe', 85000, 1), (2, 'Henry', 80000, 2), (3, 'Sam', 60000, 2), (4, 'Max', 90000, 1), (5, 'Janet', 69000, 1), (6, 'Randy', 85000, 1), (7, 'Will', 70000, 1);
+      INSERT INTO Department VALUES (1, 'IT'), (2, 'Sales');
+    `,
+    solution: `SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary FROM (SELECT *, DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rnk FROM Employee) e JOIN Department d ON e.departmentId = d.id WHERE e.rnk <= 3`,
+    description: `Write a query to find the employees who are in the top three unique salaries in each department.`,
+    testCases: [
+      {
+        input: `SELECT d.name AS Department, e.name AS Employee, e.salary AS Salary FROM (SELECT *, DENSE_RANK() OVER (PARTITION BY departmentId ORDER BY salary DESC) AS rnk FROM Employee) e JOIN Department d ON e.departmentId = d.id WHERE e.rnk <= 3`,
+        expected: JSON.stringify([
+          { Department: 'IT', Employee: 'Max', Salary: 90000 },
+          { Department: 'IT', Employee: 'Joe', Salary: 85000 },
+          { Department: 'IT', Employee: 'Randy', Salary: 85000 },
+          { Department: 'IT', Employee: 'Will', Salary: 70000 },
+          { Department: 'Sales', Employee: 'Henry', Salary: 80000 },
+          { Department: 'Sales', Employee: 'Sam', Salary: 60000 }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Trips and Users',
+    slug: 'trips-and-users',
+    difficulty: 'HARD',
+    category: 'Window Functions',
+    companies: ['Uber', 'Lyft'],
+    schema: `
+      CREATE TABLE Trips (id int, client_id int, driver_id int, city_id int, status varchar(50), request_at date);
+      CREATE TABLE Users (users_id int, banned varchar(3), role varchar(10));
+    `,
+    sampleData: `
+      INSERT INTO Trips VALUES (1, 1, 10, 1, 'completed', '2013-10-01'), (2, 2, 11, 1, 'cancelled_by_driver', '2013-10-01'), (3, 3, 12, 6, 'completed', '2013-10-01'), (4, 4, 13, 6, 'cancelled_by_client', '2013-10-01'), (5, 1, 10, 1, 'completed', '2013-10-02'), (6, 2, 11, 6, 'completed', '2013-10-02'), (7, 3, 12, 6, 'completed', '2013-10-02'), (8, 2, 12, 12, 'completed', '2013-10-03'), (9, 3, 10, 12, 'completed', '2013-10-03'), (10, 4, 13, 12, 'cancelled_by_driver', '2013-10-03');
+      INSERT INTO Users VALUES (1, 'No', 'client'), (2, 'Yes', 'client'), (3, 'No', 'client'), (4, 'No', 'client'), (10, 'No', 'driver'), (11, 'No', 'driver'), (12, 'No', 'driver'), (13, 'No', 'driver');
+    `,
+    solution: `SELECT request_at AS Day, ROUND(SUM(CASE WHEN status LIKE 'cancelled%' THEN 1 ELSE 0 END)::decimal / COUNT(*), 2) AS "Cancellation Rate" FROM Trips WHERE client_id IN (SELECT users_id FROM Users WHERE banned = 'No') AND driver_id IN (SELECT users_id FROM Users WHERE banned = 'No') AND request_at BETWEEN '2013-10-01' AND '2013-10-03' GROUP BY request_at`,
+    description: `Write a query to find the cancellation rate of requests with unbanned users (both client and driver must not be banned) each day between "2013-10-01" and "2013-10-03". Round the result to two decimal places.`,
+    testCases: [
+      {
+        input: `SELECT request_at AS Day, ROUND(SUM(CASE WHEN status LIKE 'cancelled%' THEN 1 ELSE 0 END)::decimal / COUNT(*), 2) AS "Cancellation Rate" FROM Trips WHERE client_id IN (SELECT users_id FROM Users WHERE banned = 'No') AND driver_id IN (SELECT users_id FROM Users WHERE banned = 'No') AND request_at BETWEEN '2013-10-01' AND '2013-10-03' GROUP BY request_at`,
+        expected: JSON.stringify([
+          { Day: '2013-10-01', 'Cancellation Rate': 0.33 },
+          { Day: '2013-10-02', 'Cancellation Rate': 0.00 },
+          { Day: '2013-10-03', 'Cancellation Rate': 0.50 }
+        ])
+      }
+    ]
+  },
+
+  // More Self Join Problems
+  {
+    title: 'Tree Node',
+    slug: 'tree-node',
+    difficulty: 'MEDIUM',
+    category: 'Self Join',
+    companies: ['Amazon', 'Microsoft'],
+    schema: `CREATE TABLE Tree (id int, p_id int);`,
+    sampleData: `INSERT INTO Tree VALUES (1, NULL), (2, 1), (3, 1), (4, 2), (5, 2);`,
+    solution: `SELECT id, CASE WHEN p_id IS NULL THEN 'Root' WHEN id IN (SELECT p_id FROM Tree WHERE p_id IS NOT NULL) THEN 'Inner' ELSE 'Leaf' END AS type FROM Tree ORDER BY id`,
+    description: `Write a query to report the type of each node in the tree: Root (node with no parent), Leaf (node with no children), or Inner (node with parent and children).`,
+    testCases: [
+      {
+        input: `SELECT id, CASE WHEN p_id IS NULL THEN 'Root' WHEN id IN (SELECT p_id FROM Tree WHERE p_id IS NOT NULL) THEN 'Inner' ELSE 'Leaf' END AS type FROM Tree ORDER BY id`,
+        expected: JSON.stringify([
+          { id: 1, type: 'Root' },
+          { id: 2, type: 'Inner' },
+          { id: 3, type: 'Leaf' },
+          { id: 4, type: 'Leaf' },
+          { id: 5, type: 'Leaf' }
+        ])
+      }
+    ]
+  },
+  {
+    title: 'Friend Requests II: Who Has the Most Friends',
+    slug: 'friend-requests-ii',
+    difficulty: 'MEDIUM',
+    category: 'Self Join',
+    companies: ['Facebook', 'LinkedIn'],
+    schema: `CREATE TABLE RequestAccepted (requester_id int, accepter_id int, accept_date date);`,
+    sampleData: `INSERT INTO RequestAccepted VALUES (1, 2, '2016-06-03'), (1, 3, '2016-06-08'), (2, 3, '2016-06-08'), (3, 4, '2016-06-09');`,
+    solution: `SELECT id, SUM(cnt) AS num FROM ((SELECT requester_id AS id, COUNT(*) AS cnt FROM RequestAccepted GROUP BY requester_id) UNION ALL (SELECT accepter_id AS id, COUNT(*) AS cnt FROM RequestAccepted GROUP BY accepter_id)) AS combined GROUP BY id ORDER BY num DESC LIMIT 1`,
+    description: `Write a query to find the person who has the most friends and the number of friends.`,
+    testCases: [
+      {
+        input: `SELECT id, SUM(cnt) AS num FROM ((SELECT requester_id AS id, COUNT(*) AS cnt FROM RequestAccepted GROUP BY requester_id) UNION ALL (SELECT accepter_id AS id, COUNT(*) AS cnt FROM RequestAccepted GROUP BY accepter_id)) AS combined GROUP BY id ORDER BY num DESC LIMIT 1`,
+        expected: JSON.stringify([{ id: 3, num: 3 }])
+      }
+    ]
+  },
+  {
+    title: 'Shortest Distance in a Line',
+    slug: 'shortest-distance-line',
+    difficulty: 'EASY',
+    category: 'Self Join',
+    companies: ['Google', 'Amazon'],
+    schema: `CREATE TABLE Point (x int);`,
+    sampleData: `INSERT INTO Point VALUES (-1), (0), (2);`,
+    solution: `SELECT MIN(ABS(p1.x - p2.x)) AS shortest FROM Point p1 JOIN Point p2 ON p1.x != p2.x`,
+    description: `Write a query to find the shortest distance between any two points from the Point table.`,
+    testCases: [
+      {
+        input: `SELECT MIN(ABS(p1.x - p2.x)) AS shortest FROM Point p1 JOIN Point p2 ON p1.x != p2.x`,
+        expected: JSON.stringify([{ shortest: 1 }])
+      }
+    ]
+  },
+  {
+    title: 'Actors and Directors Who Cooperated At Least Three Times',
+    slug: 'actors-directors-three-times',
+    difficulty: 'EASY',
+    category: 'Self Join',
+    companies: ['Netflix', 'IMDb'],
+    schema: `CREATE TABLE ActorDirector (actor_id int, director_id int, timestamp int);`,
+    sampleData: `INSERT INTO ActorDirector VALUES (1, 1, 0), (1, 1, 1), (1, 1, 2), (1, 2, 3), (1, 2, 4), (2, 1, 5), (2, 1, 6);`,
+    solution: `SELECT actor_id, director_id FROM ActorDirector GROUP BY actor_id, director_id HAVING COUNT(*) >= 3`,
+    description: `Write a query to find all the pairs (actor_id, director_id) where the actor has cooperated with the director at least three times.`,
+    testCases: [
+      {
+        input: `SELECT actor_id, director_id FROM ActorDirector GROUP BY actor_id, director_id HAVING COUNT(*) >= 3`,
+        expected: JSON.stringify([{ actor_id: 1, director_id: 1 }])
+      }
+    ]
+  },
+  {
+    title: 'Sales Analysis III',
+    slug: 'sales-analysis-iii',
+    difficulty: 'EASY',
+    category: 'Self Join',
+    companies: ['Amazon', 'Walmart'],
+    schema: `
+      CREATE TABLE Product (product_id int, product_name varchar(10), unit_price int);
+      CREATE TABLE Sales (seller_id int, product_id int, buyer_id int, sale_date date, quantity int, price int);
+    `,
+    sampleData: `
+      INSERT INTO Product VALUES (1, 'S8', 1000), (2, 'G4', 800), (3, 'iPhone', 1400);
+      INSERT INTO Sales VALUES (1, 1, 1, '2019-01-21', 2, 2000), (1, 2, 2, '2019-02-17', 1, 800), (2, 2, 3, '2019-06-02', 1, 800), (3, 3, 4, '2019-05-13', 2, 2800);
+    `,
+    solution: `SELECT p.product_id, p.product_name FROM Product p WHERE p.product_id NOT IN (SELECT product_id FROM Sales WHERE sale_date < '2019-01-01' OR sale_date > '2019-03-31') AND p.product_id IN (SELECT product_id FROM Sales)`,
+    description: `Write a query to report the products that were only sold in the first quarter of 2019.`,
+    testCases: [
+      {
+        input: `SELECT p.product_id, p.product_name FROM Product p WHERE p.product_id NOT IN (SELECT product_id FROM Sales WHERE sale_date < '2019-01-01' OR sale_date > '2019-03-31') AND p.product_id IN (SELECT product_id FROM Sales)`,
+        expected: JSON.stringify([{ product_id: 1, product_name: 'S8' }])
+      }
+    ]
   }
 ];
 
@@ -984,10 +1338,20 @@ async function main() {
       });
     }
     
-    console.log(`Created problem: ${problem.title}`);
+    console.log(`✓ Created problem: ${problem.title}`);
   }
 
-  console.log('✅ Seeding completed.');
+  console.log('\n✅ Database seeded successfully!');
+  console.log(`📊 Total problems created: ${problems.length}`);
+  console.log('\n📂 Distribution by category:');
+  console.log(`   - Basic Select: ${problems.filter(p => p.category === 'Basic Select').length} problems`);
+  console.log(`   - Inner Join: ${problems.filter(p => p.category === 'Inner Join').length} problems`);
+  console.log(`   - Window Functions: ${problems.filter(p => p.category === 'Window Functions').length} problems`);
+  console.log(`   - Self Join: ${problems.filter(p => p.category === 'Self Join').length} problems`);
+  console.log('\n📈 Distribution by difficulty:');
+  console.log(`   - EASY: ${problems.filter(p => p.difficulty === 'EASY').length} problems`);
+  console.log(`   - MEDIUM: ${problems.filter(p => p.difficulty === 'MEDIUM').length} problems`);
+  console.log(`   - HARD: ${problems.filter(p => p.difficulty === 'HARD').length} problems`);
 }
 
 main()
