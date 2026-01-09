@@ -4,6 +4,7 @@ SQLBench is a comprehensive platform designed for developers to practice and mas
 
 ## System architecture
 <img width="1220" height="672" alt="sqlbenchSA" src="https://github.com/user-attachments/assets/b1a9b2d7-e747-4057-9baa-1a6dbdb512bd" />
+https://youtu.be/1xHADtekTNg?si=Gj8Sq_dPL1rX3I7L
 
 
 ## Features
