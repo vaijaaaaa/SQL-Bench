@@ -2,6 +2,10 @@
 
 SQLBench is a comprehensive platform designed for developers to practice and master SQL through real-world problems. It provides an interactive environment to write, execute, and test SQL queries against isolated database instances.
 
+## System architecture
+<img width="1220" height="672" alt="sqlbenchSA" src="https://github.com/user-attachments/assets/b1a9b2d7-e747-4057-9baa-1a6dbdb512bd" />
+
+
 ## Features
 
 - **Interactive SQL Compiler**: Write and execute SQL queries directly in the browser with real-time feedback.
