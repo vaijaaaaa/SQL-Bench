@@ -4,6 +4,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
 import { executeSQLQuery } from '@/lib/sql-executor';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { compareResults } from '@/lib/test-validator';
 
 export async function POST(request: Request) {
   try {
@@ -71,7 +72,14 @@ export async function POST(request: Request) {
 
     // Execute the query
     try {
+      console.log('[SUBMIT] Executing query:', code.substring(0, 100));
       const execResult = await executeSQLQuery(code, problem.schema, problem.sampleData);
+      
+      console.log('[SUBMIT] Execution result:', execResult.success ? 'SUCCESS' : 'FAILED');
+      if (execResult.rows) {
+        console.log('[SUBMIT] Returned rows:', execResult.rows.length);
+        console.log('[SUBMIT] First row:', JSON.stringify(execResult.rows[0]));
+      }
       
       if (!execResult.success) {
         return NextResponse.json({
@@ -89,25 +97,42 @@ export async function POST(request: Request) {
       }
 
       // Test against test cases
-      const testResults = problem.testCases.map((testCase) => {
+      console.log('[SUBMIT] Starting test validation...');
+      console.log('[SUBMIT] Number of test cases:', problem.testCases.length);
+      
+      const testResults = problem.testCases.map((testCase, index) => {
         try {
           const expected = JSON.parse(testCase.expected);
-          const passed = JSON.stringify(execResult.rows) === JSON.stringify(expected);
+          
+          console.log(`[SUBMIT] Test ${index + 1}:`);
+          console.log('[SUBMIT] Query result:', JSON.stringify(execResult.rows).substring(0, 200));
+          console.log('[SUBMIT] Expected:', JSON.stringify(expected).substring(0, 200));
+          
+          const passed = compareResults(execResult.rows || [], expected);
+          
+          console.log(`[SUBMIT] Test ${index + 1} result:`, passed ? 'PASSED ✓' : 'FAILED ✗');
+          
           return {
             id: testCase.id,
             passed,
-            error: passed ? null : `Expected different results`
+            error: passed ? null : `Expected different results`,
+            actual: execResult.rows,
+            expected: expected
           };
-        } catch (e) {
+        } catch (e: any) {
+          console.error(`[SUBMIT] Test ${index + 1} error:`, e.message);
           return {
             id: testCase.id,
             passed: false,
-            error: 'Test case parsing error'
+            error: 'Test case parsing error: ' + e.message
           };
         }
       });
 
       const allPassed = testResults.every(t => t.passed);
+      const passedCount = testResults.filter(t => t.passed).length;
+      
+      console.log(`[SUBMIT] Final result: ${passedCount}/${testResults.length} tests passed`);
 
       // Create submission record
       const submission = await prisma.submission.create({

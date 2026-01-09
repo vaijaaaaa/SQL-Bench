@@ -16,16 +16,41 @@ interface ValidationResult {
 }
 
 export function compareResults(actual: any[], expected: any[]): boolean {
+  // Handle empty arrays
+  if (!actual) actual = [];
+  if (!expected) expected = [];
+  
   if (actual.length !== expected.length) {
     console.log('[TEST] Length mismatch:', actual.length, 'vs', expected.length);
     return false;
   }
 
+  // If both are empty, they match
+  if (actual.length === 0 && expected.length === 0) {
+    return true;
+  }
+
   // Normalize function to handle various data type inconsistencies
   const normalize = (obj: any): any => {
     if (obj === null || obj === undefined) return null;
-    if (typeof obj === 'number') return Number(obj);
-    if (typeof obj === 'string') return obj.trim();
+    
+    // Handle numeric types - ensure consistent number representation
+    if (typeof obj === 'number') {
+      // Handle special cases like NaN, Infinity
+      if (!isFinite(obj)) return null;
+      return Number(obj);
+    }
+    
+    if (typeof obj === 'string') {
+      const trimmed = obj.trim();
+      // Try to parse as number if it looks like one
+      const asNumber = Number(trimmed);
+      if (!isNaN(asNumber) && trimmed !== '') {
+        return asNumber;
+      }
+      return trimmed;
+    }
+    
     if (typeof obj === 'boolean') return obj;
     if (obj instanceof Date) return obj.toISOString().split('T')[0];
     
@@ -63,8 +88,20 @@ export function compareResults(actual: any[], expected: any[]): boolean {
     
     if (!isEqual) {
       console.log('[TEST] Result mismatch:');
-      console.log('Actual:', actualStr.substring(0, 500));
-      console.log('Expected:', expectedStr.substring(0, 500));
+      console.log('Actual:', actualStr.substring(0, 300));
+      console.log('Expected:', expectedStr.substring(0, 300));
+      
+      // Show first differing item for debugging
+      for (let i = 0; i < Math.min(normalizedActual.length, normalizedExpected.length); i++) {
+        const aItem = JSON.stringify(normalizedActual[i]);
+        const eItem = JSON.stringify(normalizedExpected[i]);
+        if (aItem !== eItem) {
+          console.log(`[TEST] First difference at index ${i}:`);
+          console.log('  Actual item:', aItem);
+          console.log('  Expected item:', eItem);
+          break;
+        }
+      }
     }
     
     return isEqual;
