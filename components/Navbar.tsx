@@ -21,6 +21,7 @@ export default function Navbar() {
     { name: "SQL 75", href: "/sql75" },
     { name: "Joins", href: "/joins" },
     { name: "Self Query", href: "/selfquery" },
+    { name: "Leaderboard", href: "/leaderboard" },
   ];
 
   return (

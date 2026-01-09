@@ -311,8 +311,8 @@ export default function Home() {
       <footer className="py-12 px-6 border-t border-border bg-background">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-primary flex items-center justify-center text-primary-foreground">
-              <Terminal size={14} strokeWidth={3} />
+            <div className="text-primary">
+              <Zap size={20} fill="currentColor" />
             </div>
             <span className="font-bold text-foreground tracking-tight">SQL-Bench</span>
           </div>
