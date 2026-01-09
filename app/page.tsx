@@ -48,7 +48,7 @@ export default function Home() {
               className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed"
             >
               The industrial-grade SQL practice platform. 
-              <span className="text-foreground font-medium"> 125+ curated problems</span>. 
+              <span className="text-foreground font-medium"> 40 curated problems</span>. 
               Real-time execution. Zero setup.
             </motion.p>
 
@@ -269,20 +269,20 @@ export default function Home() {
             className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"
           >
             <div>
-              <div className="text-4xl font-bold text-foreground mb-2">10k+</div>
-              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Active Users</div>
+              <div className="text-4xl font-bold text-foreground mb-2">16</div>
+              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Basic Select</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-foreground mb-2">50k+</div>
-              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Queries Run</div>
+              <div className="text-4xl font-bold text-foreground mb-2">8</div>
+              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Inner Join</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-foreground mb-2">125+</div>
-              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Problems</div>
+              <div className="text-4xl font-bold text-foreground mb-2">8</div>
+              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Window Functions</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-foreground mb-2">99.9%</div>
-              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Uptime</div>
+              <div className="text-4xl font-bold text-foreground mb-2">8</div>
+              <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">Self Join</div>
             </div>
           </motion.div>
         </div>

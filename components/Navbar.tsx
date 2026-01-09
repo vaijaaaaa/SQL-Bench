@@ -17,7 +17,6 @@ export default function Navbar() {
   }
 
   const navLinks = [
-    { name: "Dashboard", href: "/dashboard" },
     { name: "SQL 50", href: "/sql50" },
     { name: "SQL 75", href: "/sql75" },
     { name: "Joins", href: "/joins" },

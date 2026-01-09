@@ -15,7 +15,7 @@ const sections = [
     color: "text-chart-1",
     bg: "bg-chart-1/10",
     href: "/sql50",
-    category: "SQL 50"
+    category: "Basic Select"
   },
   {
     id: "sql75",
@@ -25,7 +25,7 @@ const sections = [
     color: "text-chart-2",
     bg: "bg-chart-2/10",
     href: "/sql75",
-    category: "SQL 75"
+    category: "Window Functions"
   },
   {
     id: "joins",
@@ -35,7 +35,7 @@ const sections = [
     color: "text-chart-3",
     bg: "bg-chart-3/10",
     href: "/joins",
-    category: "Joins"
+    category: "Inner Join"
   },
   {
     id: "self-queries",
@@ -45,7 +45,7 @@ const sections = [
     color: "text-chart-4",
     bg: "bg-chart-4/10",
     href: "/selfquery",
-    category: "Self Queries"
+    category: "Self Join"
   }
 ];
 
