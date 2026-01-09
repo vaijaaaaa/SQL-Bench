@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Database, Terminal, Zap, Trophy, Activity, Code2, CheckCircle2, Play } from "lucide-react";
+import { ArrowRight, Database, Terminal, Zap, Trophy, Activity, Code2, CheckCircle2, Play, Github } from "lucide-react";
 import { FlickeringGrid } from "@/components/ui/flickering-grid";
 import { motion } from "motion/react";
+import { RainbowButton } from "@/components/ui/rainbow-button";
 
 export default function Home() {
   return (
@@ -71,6 +72,24 @@ export default function Home() {
                 className="h-12 px-8 flex items-center justify-center bg-background text-foreground border border-border rounded-full font-semibold text-sm hover:bg-accent transition-all hover:border-primary/50"
               >
                 View Problem Set
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="flex justify-center mt-4"
+            >
+              <Link
+                href="https://github.com/vaijaaaaa/SQL-Bench"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <RainbowButton size="sm" className="gap-2">
+                  <Github size={16} />
+                  <span>Star on GitHub</span>
+                </RainbowButton>
               </Link>
             </motion.div>
           </div>
