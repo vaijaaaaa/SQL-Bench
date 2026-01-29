@@ -1,4 +1,5 @@
 import { executeSQLQuery } from './sql-executor';
+import { logger } from './logger';
 
 interface TestCase {
   id: string;
@@ -21,7 +22,7 @@ export function compareResults(actual: any[], expected: any[]): boolean {
   if (!expected) expected = [];
   
   if (actual.length !== expected.length) {
-    console.log('[TEST] Length mismatch:', actual.length, 'vs', expected.length);
+    logger.debug('Length mismatch', { actual: actual.length, expected: expected.length });
     return false;
   }
 
@@ -87,18 +88,20 @@ export function compareResults(actual: any[], expected: any[]): boolean {
     const isEqual = actualStr === expectedStr;
     
     if (!isEqual) {
-      console.log('[TEST] Result mismatch:');
-      console.log('Actual:', actualStr.substring(0, 300));
-      console.log('Expected:', expectedStr.substring(0, 300));
+      logger.debug('Result mismatch', {
+        actualPreview: actualStr.substring(0, 300),
+        expectedPreview: expectedStr.substring(0, 300),
+      });
       
       // Show first differing item for debugging
       for (let i = 0; i < Math.min(normalizedActual.length, normalizedExpected.length); i++) {
         const aItem = JSON.stringify(normalizedActual[i]);
         const eItem = JSON.stringify(normalizedExpected[i]);
         if (aItem !== eItem) {
-          console.log(`[TEST] First difference at index ${i}:`);
-          console.log('  Actual item:', aItem);
-          console.log('  Expected item:', eItem);
+          logger.debug(`First difference at index ${i}`, {
+            actualItem: aItem,
+            expectedItem: eItem,
+          });
           break;
         }
       }
@@ -106,7 +109,7 @@ export function compareResults(actual: any[], expected: any[]): boolean {
     
     return isEqual;
   } catch (error) {
-    console.error('[TEST] Comparison error:', error);
+    logger.error('Comparison error', error);
     return false;
   }
 }
@@ -120,11 +123,13 @@ export async function validateSubmission(
   const failedTests: TestCase[] = [];
   let totalExecutionTime = 0;
 
+  logger.debug('Starting test validation', { testCount: testCases.length });
+
   for (const testCase of testCases) {
     try {
       const expected = JSON.parse(testCase.expected);
       
-      console.log('[TEST] Running test case...');
+      logger.debug('Running test case', { testId: testCase.id });
       
       const result = await executeSQLQuery(
         query,
@@ -136,32 +141,43 @@ export async function validateSubmission(
       totalExecutionTime += result.executionTime;
 
       if (!result.success) {
-        console.log('[TEST] Query execution failed:', result.error);
+        logger.debug('Query execution failed', { error: result.error });
         failedTests.push(testCase);
         continue;
       }
 
-      console.log('[TEST] Actual rows:', JSON.stringify(result.rows).substring(0, 200));
-      console.log('[TEST] Expected rows:', JSON.stringify(expected).substring(0, 200));
+      logger.debug('Comparing results', {
+        actualRows: result.rows?.length,
+        expectedRows: expected.length,
+      });
 
       if (compareResults(result.rows || [], expected)) {
-        console.log('[TEST] ✓ Test case passed');
+        logger.debug('Test case passed');
         passedTests++;
       } else {
-        console.log('[TEST] ✗ Test case failed - results do not match');
+        logger.debug('Test case failed - results do not match');
         failedTests.push(testCase);
       }
     } catch (error: any) {
-      console.error('[TEST] Exception during test:', error.message);
+      logger.error('Exception during test', error, { testId: testCase.id });
       failedTests.push(testCase);
     }
   }
+
+  logger.info('Test validation complete', {
+    passed: passedTests,
+    failed: failedTests.length,
+    total: testCases.length,
+  });
 
   return {
     passed: failedTests.length === 0,
     totalTests: testCases.length,
     passedTests,
     failedTests,
+    executionTime: totalExecutionTime,
+  };
+}
     executionTime: totalExecutionTime,
   };
 }

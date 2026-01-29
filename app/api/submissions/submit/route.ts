@@ -5,15 +5,20 @@ import { prisma } from '@/lib/prisma';
 import { executeSQLQuery } from '@/lib/sql-executor';
 import { checkRateLimit } from '@/lib/rate-limiter';
 import { compareResults } from '@/lib/test-validator';
+import { logger } from '@/lib/logger';
+import { validateBody, submissionSchema, sanitizeSQLInput } from '@/lib/validation';
+import type { SubmissionResult, TestCaseResult } from '@/types/api';
 
 export async function POST(request: Request) {
+  const startTime = Date.now();
+  
   try {
-
+    // Authentication check
     const session = await getServerSession(authOptions);
     
     if (!session || !session.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
@@ -25,39 +30,46 @@ export async function POST(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { success: false, error: 'User not found' },
         { status: 404 }
       );
     }
 
+    // Rate limiting
     const ratelimit = await checkRateLimit(
       `submit:${session.user.email}`,
       10,
       60
     );
 
-    if(!ratelimit.allowed){
+    if (!ratelimit.allowed) {
       return NextResponse.json(
         {
-          error : 'Too many submissions',
-          message : `Please wait ${ratelimit.resetIn} seconds before trying again`
+          success: false,
+          error: 'Too many submissions',
+          message: `Please wait ${ratelimit.resetIn} seconds before trying again`
         },
-        {status : 429}
-      )
+        { status: 429 }
+      );
     }
 
+    // Parse and validate request body
     const body = await request.json();
-    const { problemId, code, isSubmission } = body;
-
-
-    if (!problemId || !code) {
+    const validation = validateBody(submissionSchema, body);
+    
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Problem ID and code are required' },
+        { success: false, error: validation.error },
         { status: 400 }
       );
     }
 
-  
+    const { problemId, code, isSubmission } = validation.data;
+
+    // Sanitize SQL input
+    const sanitizedCode = sanitizeSQLInput(code);
+
+    // Get problem details
     const problem = await prisma.problem.findUnique({
       where: { id: problemId },
       include: { testCases: true }
@@ -65,82 +77,86 @@ export async function POST(request: Request) {
 
     if (!problem) {
       return NextResponse.json(
-        { error: 'Problem not found' },
+        { success: false, error: 'Problem not found' },
         { status: 404 }
       );
     }
 
     // Execute the query
     try {
-      console.log('[SUBMIT] Executing query:', code.substring(0, 100));
-      const execResult = await executeSQLQuery(code, problem.schema, problem.sampleData);
+      logger.debug('Executing query', {
+        userId: user.id,
+        problemId,
+        queryLength: sanitizedCode.length,
+      });
       
-      console.log('[SUBMIT] Execution result:', execResult.success ? 'SUCCESS' : 'FAILED');
-      if (execResult.rows) {
-        console.log('[SUBMIT] Returned rows:', execResult.rows.length);
-        console.log('[SUBMIT] First row:', JSON.stringify(execResult.rows[0]));
-      }
+      const execResult = await executeSQLQuery(
+        sanitizedCode,
+        problem.schema,
+        problem.sampleData
+      );
       
       if (!execResult.success) {
-        return NextResponse.json({
+        return NextResponse.json<SubmissionResult>({
           success: false,
           error: execResult.error
         });
       }
       
+      // If not a submission, just return results
       if (!isSubmission) {
-        // Just run the query, don't test
-        return NextResponse.json({
+        return NextResponse.json<SubmissionResult>({
           success: true,
           rows: execResult.rows
         });
       }
 
       // Test against test cases
-      console.log('[SUBMIT] Starting test validation...');
-      console.log('[SUBMIT] Number of test cases:', problem.testCases.length);
+      logger.debug('Running test validation', { testCount: problem.testCases.length });
       
-      const testResults = problem.testCases.map((testCase, index) => {
+      const testResults: TestCaseResult[] = problem.testCases.map((testCase) => {
         try {
           const expected = JSON.parse(testCase.expected);
-          
-          console.log(`[SUBMIT] Test ${index + 1}:`);
-          console.log('[SUBMIT] Query result:', JSON.stringify(execResult.rows).substring(0, 200));
-          console.log('[SUBMIT] Expected:', JSON.stringify(expected).substring(0, 200));
-          
           const passed = compareResults(execResult.rows || [], expected);
-          
-          console.log(`[SUBMIT] Test ${index + 1} result:`, passed ? 'PASSED ✓' : 'FAILED ✗');
           
           return {
             id: testCase.id,
             passed,
-            error: passed ? null : `Expected different results`,
-            actual: execResult.rows,
-            expected: expected
+            error: passed ? undefined : 'Expected different results',
+            actual: testCase.isHidden ? undefined : execResult.rows,
+            expected: testCase.isHidden ? undefined : expected,
+            isHidden: testCase.isHidden,
           };
         } catch (e: any) {
-          console.error(`[SUBMIT] Test ${index + 1} error:`, e.message);
+          logger.error('Test case parsing error', e, { testCaseId: testCase.id });
           return {
             id: testCase.id,
             passed: false,
-            error: 'Test case parsing error: ' + e.message
+            error: 'Test case parsing error: ' + e.message,
+            isHidden: testCase.isHidden,
           };
         }
       });
 
-      const allPassed = testResults.every(t => t.passed);
-      const passedCount = testResults.filter(t => t.passed).length;
+      const allPassed = testResults.every((t) => t.passed);
+      const passedCount = testResults.filter((t) => t.passed).length;
       
-      console.log(`[SUBMIT] Final result: ${passedCount}/${testResults.length} tests passed`);
+      logger.info('Submission completed', {
+        userId: user.id,
+        problemId,
+        passed: allPassed,
+        passedCount,
+        totalTests: testResults.length,
+      });
 
       // Create submission record
       const submission = await prisma.submission.create({
         data: {
           userId: user.id,
           problemId,
-          query: code,
-          isCorrect: allPassed, 
+          query: sanitizedCode,
+          isCorrect: allPassed,
+          executionTime: execResult.executionTime,
         }
       });
 
@@ -156,32 +172,67 @@ export async function POST(request: Request) {
           create: {
             userId: user.id,
             problemId,
-            status: 'SOLVED'
+            status: 'SOLVED',
+            attempts: 1,
+            solvedAt: new Date(),
           },
           update: {
-            status: 'SOLVED'
+            status: 'SOLVED',
+            solvedAt: new Date(),
+            attempts: {
+              increment: 1
+            }
+          }
+        });
+      } else {
+        await prisma.userProgress.upsert({
+          where: {
+            userId_problemId: {
+              userId: user.id,
+              problemId
+            }
+          },
+          create: {
+            userId: user.id,
+            problemId,
+            status: 'ATTEMPTED',
+            attempts: 1,
+          },
+          update: {
+            status: 'ATTEMPTED',
+            attempts: {
+              increment: 1
+            }
           }
         });
       }
 
-      return NextResponse.json({
+      const duration = Date.now() - startTime;
+      logger.api('POST', '/api/submissions/submit', 200, duration);
+
+      return NextResponse.json<SubmissionResult>({
         success: true,
         rows: execResult.rows,
         testResults,
-        submissionId: submission.id
+        submissionId: submission.id,
+        executionTime: execResult.executionTime,
       });
 
     } catch (execError: any) {
-      return NextResponse.json({
+      logger.error('Query execution error', execError, { userId: user.id, problemId });
+      return NextResponse.json<SubmissionResult>({
         success: false,
         error: execError.message || 'Query execution failed',
         testResults: []
       });
     }
   } catch (error: any) {
-    console.error('Submission error:', error);
+    logger.error('Submission request failed', error);
+    const duration = Date.now() - startTime;
+    logger.api('POST', '/api/submissions/submit', 500, duration);
+    
     return NextResponse.json(
-      { error: 'Submission failed: ' + error.message },
+      { success: false, error: 'Submission failed: ' + error.message },
       { status: 500 }
     );
   }
