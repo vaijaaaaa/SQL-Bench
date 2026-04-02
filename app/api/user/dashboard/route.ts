@@ -2,34 +2,34 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import { resolveCurrentUser } from '@/lib/current-user';
 
 // GET /api/user/dashboard
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.id) {
+    if (!session || (!session.user?.id && !session.user?.email)) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const user = await resolveCurrentUser(session);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const userId = user.id;
     const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const monthStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [user, totalProblems, solvedProblems, attemptedProblems, totalSubmissions, successfulSubmissions, solvedThisWeek, solvedThisMonth, recentSubmissions, problemsByDifficulty, problemsByCategory, solvedRows, progressByDifficulty] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          createdAt: true,
-        },
-      }),
+    const [totalProblems, solvedProblems, attemptedProblems, totalSubmissions, successfulSubmissions, solvedThisWeek, solvedThisMonth, recentSubmissions, problemsByDifficulty, problemsByCategory, solvedRows, progressByDifficulty] = await Promise.all([
       prisma.problem.count(),
       prisma.userProgress.count({
         where: {
@@ -113,13 +113,6 @@ export async function GET(request: Request) {
       }),
     ]);
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
     const successRate =
       totalSubmissions > 0
         ? ((successfulSubmissions / totalSubmissions) * 100).toFixed(1)
@@ -142,6 +135,8 @@ export async function GET(request: Request) {
         id: user.id,
         name: user.name,
         email: user.email,
+        image: user.image,
+        createdAt: user.createdAt,
       },
       stats: {
         totalProblems,                              // Total problems in system

@@ -2,29 +2,20 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import { resolveCurrentUser } from '@/lib/current-user';
 
 export async function GET(request : Request){
     try {
         const session = await getServerSession(authOptions);
 
-    if(!session || !session.user?.id){
+    if(!session || (!session.user?.id && !session.user?.email)){
             return NextResponse.json(
                 {error : 'Unauthorized - Please login first'},
                 {status : 401}
             );
         }
 
-        const user = await prisma.user.findUnique({
-      where : {id : session.user.id},
-            select:{
-                id:true,
-                email : true,
-                name : true,
-                image : true,
-                createdAt : true,
-                updatedAt : true,
-            },
-        });
+        const user = await resolveCurrentUser(session);
 
         if(!user){
             return NextResponse.json(
@@ -55,10 +46,19 @@ export async function PUT(request: Request) {
 
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.id) {
+    if (!session || (!session.user?.id && !session.user?.email)) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
         { status: 401 }
+      );
+    }
+
+    const user = await resolveCurrentUser(session);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -74,8 +74,8 @@ export async function PUT(request: Request) {
     }
 
 
-    const user = await prisma.user.update({
-      where: { id: session.user.id },
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
       data: {
         ...(name && { name }),    
         ...(image && { image }),  
@@ -90,7 +90,7 @@ export async function PUT(request: Request) {
       },
     });
 
-    return NextResponse.json(user, {
+    return NextResponse.json(updatedUser, {
       headers: {
         'Cache-Control': 'private, no-store',
       },

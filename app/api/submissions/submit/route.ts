@@ -8,6 +8,7 @@ import { compareResults } from '@/lib/test-validator';
 import { logger } from '@/lib/logger';
 import { validateBody, submissionSchema, sanitizeSQLInput } from '@/lib/validation';
 import type { SubmissionResult, TestCaseResult } from '@/types/api';
+import { resolveCurrentUser } from '@/lib/current-user';
 
 export async function POST(request: Request) {
   const startTime = Date.now();
@@ -16,17 +17,15 @@ export async function POST(request: Request) {
     // Authentication check
     const session = await getServerSession(authOptions);
     
-    if (!session || !session.user?.email) {
+    if (!session || (!session.user?.id && !session.user?.email)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    });
+    // Get or recreate the authenticated user record.
+    const user = await resolveCurrentUser(session);
 
     if (!user) {
       return NextResponse.json(
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
 
     // Rate limiting
     const ratelimit = await checkRateLimit(
-      `submit:${session.user.email}`,
+      `submit:${user.email ?? session.user.email ?? user.id}`,
       10,
       60
     );

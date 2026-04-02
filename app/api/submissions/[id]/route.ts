@@ -3,15 +3,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import {prisma} from '@/lib/prisma';
 import { validateSubmission } from '@/lib/test-validator';
+import { resolveCurrentUser } from '@/lib/current-user';
 
 export async function POST (request : Request){
     try {
         const session = await getServerSession(authOptions);
 
-        if(!session || !session.user){
+        if(!session || (!session.user?.id && !session.user?.email)){
             return NextResponse.json(
                 {error:'Unauthorized'},
                 {status : 401}
+            );
+        }
+
+        const user = await resolveCurrentUser(session);
+
+        if (!user) {
+            return NextResponse.json(
+                {error:'User not found'},
+                {status : 404}
             );
         }
 
@@ -39,7 +49,7 @@ export async function POST (request : Request){
 
         const submission = await prisma.submission.create({
             data : {
-                userId : session.user.id,
+                userId : user.id,
                 problemId,
                 query,
                 isCorrect:false,
@@ -75,12 +85,12 @@ export async function POST (request : Request){
                 await prisma.userProgress.upsert({
                     where: {
                         userId_problemId: {
-                            userId: session.user.id,
+                            userId: user.id,
                             problemId
                         }
                     },
                     create: {
-                        userId: session.user.id,
+                        userId: user.id,
                         problemId,
                         status: 'SOLVED',
                         attempts: 1,
@@ -98,12 +108,12 @@ export async function POST (request : Request){
                 await prisma.userProgress.upsert({
                     where: {
                         userId_problemId: {
-                            userId: session.user.id,
+                            userId: user.id,
                             problemId
                         }
                     },
                     create: {
-                        userId: session.user.id,
+                        userId: user.id,
                         problemId,
                         status: 'ATTEMPTED',
                         attempts: 1,

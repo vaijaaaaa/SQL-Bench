@@ -2,16 +2,26 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/lib/prisma';
+import { resolveCurrentUser } from '@/lib/current-user';
 
 
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.id) {
+    if (!session || (!session.user?.id && !session.user?.email)) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
         { status: 401 }
+      );
+    }
+
+    const currentUser = await resolveCurrentUser(session);
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
       );
     }
 
@@ -22,7 +32,7 @@ export async function GET(request: Request) {
     const page = Number.isNaN(pageParam) ? 1 : Math.max(1, pageParam);
     const limit = Number.isNaN(limitParam) ? 10 : Math.min(Math.max(1, limitParam), 50);
 
-    const where: any = { userId: session.user.id };
+    const where: any = { userId: currentUser.id };
     if (problemId) {
       where.problemId = problemId; 
     }
