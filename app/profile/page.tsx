@@ -14,6 +14,10 @@ export default function ProfilePage() {
   const [userData, setUserData] = useState<any>(null);
   const [progress, setProgress] = useState<any[]>([]);
   const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
+  const [problemStats, setProblemStats] = useState<any>({
+    totalProblems: 0,
+    byDifficulty: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,20 +26,24 @@ export default function ProfilePage() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch user profile
-        const userRes = await fetch("/api/user/profile");
+        const [userRes, progressRes, submissionsRes, statsRes] = await Promise.all([
+          fetch("/api/user/profile"),
+          fetch("/api/user/progress"),
+          fetch("/api/submissions?limit=10"),
+          fetch("/api/problems/stats"),
+        ]);
+
         const user = userRes.ok ? await userRes.json() : null;
-        setUserData(user);
-
-        // Fetch progress
-        const progressRes = await fetch("/api/user/progress");
         const progressData = progressRes.ok ? await progressRes.json() : [];
-        setProgress(progressData);
-
-        // Fetch submissions
-        const submissionsRes = await fetch("/api/submissions?limit=10");
         const submissionsData = submissionsRes.ok ? await submissionsRes.json() : { data: [] };
+        const statsData = statsRes.ok
+          ? await statsRes.json()
+          : { totalProblems: 0, byDifficulty: [] };
+
+        setUserData(user);
+        setProgress(progressData);
         setRecentSubmissions(submissionsData.data || []);
+        setProblemStats(statsData);
 
       } catch (e) {
         setError("Failed to load profile data.");
@@ -46,41 +54,21 @@ export default function ProfilePage() {
     fetchData();
   }, []);
 
-  // Calculate stats from progress
-  // Fetch all problems for accurate section/overall progress
-  const [allProblems, setAllProblems] = useState<any[]>([]);
-
-  useEffect(() => {
-    async function fetchProblems() {
-      try {
-        const res = await fetch("/api/problems?limit=1000");
-        const data = res.ok ? await res.json() : { data: [] };
-        setAllProblems(data.data || []);
-      } catch {
-        setAllProblems([]);
-      }
-    }
-    fetchProblems();
-  }, []);
-
-  // Map: sectionName -> { total, solved }
-  const sectionStats: Record<string, { total: number; solved: number }> = {};
-  allProblems.forEach((problem) => {
-    const section = problem.section || "Other";
-    if (!sectionStats[section]) sectionStats[section] = { total: 0, solved: 0 };
-    sectionStats[section].total++;
-  });
-  progress.forEach((p) => {
-    if (p.status === "SOLVED" && p.problem) {
-      const section = p.problem.section || "Other";
-      if (sectionStats[section]) sectionStats[section].solved++;
-    }
-  });
-
   // Overall progress
-  const totalProblems = allProblems.length;
+  const totalProblems = problemStats.totalProblems || 0;
   const totalSolved = progress.filter((p) => p.status === "SOLVED").length;
   const completionPercentage = totalProblems > 0 ? Math.round((totalSolved / totalProblems) * 100) : 0;
+
+  const difficultyTotals = (problemStats.byDifficulty || []).reduce(
+    (acc: { EASY: number; MEDIUM: number; HARD: number }, item: any) => {
+      const key = item.difficulty as "EASY" | "MEDIUM" | "HARD";
+      if (key && key in acc) {
+        acc[key] = item.total || 0;
+      }
+      return acc;
+    },
+    { EASY: 0, MEDIUM: 0, HARD: 0 }
+  );
 
   // Difficulty breakdown (dynamic)
   const easy = progress.filter((p) => p.status === "SOLVED" && p.problem?.difficulty === "EASY").length;
@@ -239,9 +227,9 @@ export default function ProfilePage() {
                     <span className="text-sm font-bold text-foreground">{easy}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500" style={{ width: `${allProblems.filter(p => p.difficulty === 'EASY').length ? (easy / allProblems.filter(p => p.difficulty === 'EASY').length) * 100 : 0}%` }} />
+                    <div className="h-full bg-green-500" style={{ width: `${difficultyTotals.EASY ? (easy / difficultyTotals.EASY) * 100 : 0}%` }} />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">{easy}/{allProblems.filter(p => p.difficulty === 'EASY').length} solved</div>
+                  <div className="text-xs text-muted-foreground mt-1">{easy}/{difficultyTotals.EASY} solved</div>
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
@@ -249,9 +237,9 @@ export default function ProfilePage() {
                     <span className="text-sm font-bold text-foreground">{medium}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-yellow-500" style={{ width: `${allProblems.filter(p => p.difficulty === 'MEDIUM').length ? (medium / allProblems.filter(p => p.difficulty === 'MEDIUM').length) * 100 : 0}%` }} />
+                    <div className="h-full bg-yellow-500" style={{ width: `${difficultyTotals.MEDIUM ? (medium / difficultyTotals.MEDIUM) * 100 : 0}%` }} />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">{medium}/{allProblems.filter(p => p.difficulty === 'MEDIUM').length} solved</div>
+                  <div className="text-xs text-muted-foreground mt-1">{medium}/{difficultyTotals.MEDIUM} solved</div>
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
@@ -259,9 +247,9 @@ export default function ProfilePage() {
                     <span className="text-sm font-bold text-foreground">{hard}</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-red-500" style={{ width: `${allProblems.filter(p => p.difficulty === 'HARD').length ? (hard / allProblems.filter(p => p.difficulty === 'HARD').length) * 100 : 0}%` }} />
+                    <div className="h-full bg-red-500" style={{ width: `${difficultyTotals.HARD ? (hard / difficultyTotals.HARD) * 100 : 0}%` }} />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">{hard}/{allProblems.filter(p => p.difficulty === 'HARD').length} solved</div>
+                  <div className="text-xs text-muted-foreground mt-1">{hard}/{difficultyTotals.HARD} solved</div>
                 </div>
               </div>
             </div>

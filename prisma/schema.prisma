@@ -83,6 +83,10 @@ model Problem {
   progress UserProgress[]
   submissions Submission[]
   testCases TestCase[]
+
+  @@index([category])
+  @@index([difficulty])
+  @@index([createdAt])
 }
 
 enum Difficulty{
@@ -115,6 +119,10 @@ model UserProgress {
   problem Problem @relation(fields: [problemId],references: [id],onDelete: Cascade)
 
   @@unique([userId,problemId])
+  @@index([userId, status])
+  @@index([status])
+  @@index([problemId])
+  @@index([solvedAt])
   
 }
 
@@ -136,4 +144,9 @@ model Submission {
 
   user User @relation(fields: [userId],references: [id],onDelete: Cascade)
   problem Problem @relation(fields: [problemId],references: [id],onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([isCorrect])
+  @@index([problemId])
 }

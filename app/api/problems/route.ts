@@ -2,6 +2,8 @@ import {NextResponse} from "next/server";
 import {prisma} from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
+const MAX_PAGE_SIZE = 200;
+
 export async function GET(request:Request) {
     try {
 
@@ -26,8 +28,12 @@ export async function GET(request:Request) {
         const {searchParams} = new URL(request.url);
         const difficulty = searchParams.get('difficulty');
         const category = searchParams.get('category');
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '10');
+        const parsedPage = parseInt(searchParams.get('page') || '1', 10);
+        const parsedLimit = parseInt(searchParams.get('limit') || '10', 10);
+        const page = Number.isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+        const limit = Number.isNaN(parsedLimit)
+            ? 10
+            : Math.min(Math.max(parsedLimit, 1), MAX_PAGE_SIZE);
 
         const where : any = {};
 
@@ -40,27 +46,27 @@ export async function GET(request:Request) {
         }
 
         const skip = (page-1) * limit;
-        const total = await prisma.problem.count({where});
-
-        const problems = await prisma.problem.findMany({
-            where,
-            skip,
-            take : limit,
-            select : {
-                id : true,
-                title : true,
-                slug : true,
-                description : true,
-                difficulty : true,
-                category : true,
-                companies: true,
-                createdAt : true,
-                _count : {
-                    select : {testCases : true},
+        const [total, problems] = await Promise.all([
+            prisma.problem.count({where}),
+            prisma.problem.findMany({
+                where,
+                skip,
+                take : limit,
+                select : {
+                    id : true,
+                    title : true,
+                    slug : true,
+                    difficulty : true,
+                    category : true,
+                    companies: true,
+                    createdAt : true,
+                    _count : {
+                        select : {testCases : true},
+                    },
                 },
-            },
-            orderBy : {createdAt : 'desc'},
-        })
+                orderBy : {createdAt : 'desc'},
+            })
+        ]);
 
         return NextResponse.json({
             data : problems,
@@ -70,6 +76,10 @@ export async function GET(request:Request) {
                 total,
                 pages : Math.ceil(total/limit),
             }
+        }, {
+            headers: {
+                "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+            },
         })
 
 

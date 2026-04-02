@@ -51,28 +51,30 @@ const sections = [
 
 export default function DashboardPage() {
   const [progressData, setProgressData] = useState<any[]>([]);
-  const [allProblems, setAllProblems] = useState<any[]>([]);
+  const [problemStats, setProblemStats] = useState<any>({
+    totalProblems: 0,
+    byCategory: [],
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAll() {
       setLoading(true);
       try {
-        const [progressRes, problemsRes] = await Promise.all([
+        const [progressRes, statsRes] = await Promise.all([
           fetch("/api/user/progress"),
-          fetch("/api/problems?limit=1000")
+          fetch("/api/problems/stats")
         ]);
         const progress = progressRes.ok ? await progressRes.json() : [];
-        const problemsData = problemsRes.ok ? await problemsRes.json() : { data: [] };
-        
-        // Handle the response structure { data: [...], pagination: {...} }
-        const problems = Array.isArray(problemsData.data) ? problemsData.data : [];
+        const stats = statsRes.ok
+          ? await statsRes.json()
+          : { totalProblems: 0, byCategory: [] };
         
         setProgressData(progress || []);
-        setAllProblems(problems || []);
+        setProblemStats(stats);
       } catch {
         setProgressData([]);
-        setAllProblems([]);
+        setProblemStats({ totalProblems: 0, byCategory: [] });
       } finally {
         setLoading(false);
       }
@@ -82,22 +84,27 @@ export default function DashboardPage() {
 
   // Map: sectionName -> { total, solved }
   const sectionStats: Record<string, { total: number; solved: number }> = {};
-  if (Array.isArray(allProblems)) {
-    allProblems.forEach((problem) => {
-      const section = problem.category || problem.section || "Other";
-      if (!sectionStats[section]) sectionStats[section] = { total: 0, solved: 0 };
-      sectionStats[section].total++;
+  if (Array.isArray(problemStats.byCategory)) {
+    problemStats.byCategory.forEach((bucket: any) => {
+      const section = bucket.category || "Other";
+      sectionStats[section] = {
+        total: bucket.total || 0,
+        solved: 0,
+      };
     });
   }
   progressData.forEach((p) => {
     if (p.status === "SOLVED" && p.problem) {
       const section = p.problem.category || p.problem.section || "Other";
-      if (sectionStats[section]) sectionStats[section].solved++;
+      if (!sectionStats[section]) {
+        sectionStats[section] = { total: 0, solved: 0 };
+      }
+      sectionStats[section].solved++;
     }
   });
 
   // Overall progress
-  const totalProblems = allProblems.length;
+  const totalProblems = problemStats.totalProblems || 0;
   const totalCompleted = progressData.filter((p) => p.status === "SOLVED").length;
   const completionPercentage = totalProblems > 0 ? Math.round((totalCompleted / totalProblems) * 100) : 0;
 
