@@ -116,33 +116,28 @@ export const authOptions: AuthOptions = {
       }
       return true
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       if (user) {
-        // Store the database user ID, not the provider ID
         token.id = user.id
+        token.name = user.name
+        token.email = user.email
+        token.picture = user.image
       }
       return token
     },
     async session({ session, token }) {
       if (session.user && token.id) {
-        // Fetch the actual database user
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string }
-        })
-        
-        if (dbUser) {
-          session.user.id = dbUser.id
-          session.user.name = dbUser.name
-          session.user.email = dbUser.email!
-          session.user.image = dbUser.image
-        }
+        session.user.id = token.id as string
+        session.user.name = token.name ?? session.user.name
+        session.user.email = token.email ?? session.user.email ?? ''
+        session.user.image = (token.picture as string | null | undefined) ?? session.user.image
       }
       return session
     }
   },
 
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, 
+  debug: process.env.NODE_ENV === 'development', 
 }
 
 const handler = NextAuth(authOptions)

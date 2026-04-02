@@ -9,35 +9,23 @@ export async function GET(request: Request) {
 
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
         { status: 401 }
       );
     }
 
- 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-   
     const { searchParams } = new URL(request.url);
     const problemId = searchParams.get('problemId'); 
+    const limitParam = parseInt(searchParams.get('limit') || '200', 10);
+    const limit = Number.isNaN(limitParam) ? 200 : Math.min(Math.max(limitParam, 1), 500);
 
-   
     if (problemId) {
       const progress = await prisma.userProgress.findUnique({
         where: {
           userId_problemId: {
-            userId: user.id,
+            userId: session.user.id,
             problemId: problemId,
           },
         },
@@ -54,13 +42,16 @@ export async function GET(request: Request) {
         },
       });
 
-   
-      return NextResponse.json(progress || null);
+      return NextResponse.json(progress || null, {
+        headers: {
+          'Cache-Control': 'private, no-store',
+        },
+      });
     }
 
 
     const allProgress = await prisma.userProgress.findMany({
-      where: { userId: user.id },
+      where: { userId: session.user.id },
       include: {
         problem: {
           select: {
@@ -72,11 +63,16 @@ export async function GET(request: Request) {
           },
         },
       },
+      take: limit,
       orderBy: { updatedAt: 'desc' },
     });
 
     
-    return NextResponse.json(allProgress);
+    return NextResponse.json(allProgress, {
+      headers: {
+        'Cache-Control': 'private, no-store',
+      },
+    });
 
   } catch (error: any) {
     console.error('Get progress error:', error);

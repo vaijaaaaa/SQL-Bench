@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Lock, Search, Filter, Loader, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -42,7 +42,7 @@ export default function ProblemList({
   categories,
   backLink,
 }: ProblemListProps) {
-  const [progressData, setProgressData] = useState<any[]>([]);
+  const [solvedProblemIds, setSolvedProblemIds] = useState<Set<string>>(new Set());
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,13 +52,18 @@ export default function ProblemList({
   useEffect(() => {
     const fetchProgress = async () => {
       try {
-        const res = await fetch('/api/user/progress');
+        const res = await fetch('/api/user/progress?limit=500');
         if (res.ok) {
           const data = await res.json();
-          setProgressData(data || []);
+          const solvedIds = new Set(
+            (data || [])
+              .filter((p: any) => p.status === 'SOLVED')
+              .map((p: any) => p.problemId)
+          );
+          setSolvedProblemIds(solvedIds);
         }
       } catch (error) {
-        setProgressData([]);
+        setSolvedProblemIds(new Set());
       }
     };
     fetchProgress();
@@ -86,21 +91,24 @@ export default function ProblemList({
   }, [category]);
 
   // Helper to check if a problem is solved
-  const isSolved = (problemId: string) =>
-    progressData.some(
-      (p: any) => p.problemId === problemId && p.status === "SOLVED"
-    );
+  const isSolved = (problemId: string) => solvedProblemIds.has(problemId);
 
   // Filter problems based on search and difficulty
-  const filteredProblems = problems.filter((problem) => {
-    const matchesSearch =
-      problem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      problem.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDifficulty = filterDifficulty === 'ALL' || problem.difficulty === filterDifficulty;
-    const matchesCategory = filterCategory === 'ALL' || problem.category === filterCategory;
+  const filteredProblems = useMemo(
+    () =>
+      problems.filter((problem) => {
+        const matchesSearch =
+          problem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          problem.category.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesDifficulty =
+          filterDifficulty === 'ALL' || problem.difficulty === filterDifficulty;
+        const matchesCategory =
+          filterCategory === 'ALL' || problem.category === filterCategory;
 
-    return matchesSearch && matchesDifficulty && matchesCategory;
-  });
+        return matchesSearch && matchesDifficulty && matchesCategory;
+      }),
+    [problems, searchQuery, filterDifficulty, filterCategory]
+  );
 
   // Get unique categories from problems
   const uniqueCategories = Array.from(new Set(problems.map((p) => p.category)));
@@ -249,7 +257,7 @@ export default function ProblemList({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 flex-1">
                       {/* Problem Number */}
-                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                         {index + 1}
                       </div>
 

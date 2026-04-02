@@ -2,22 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, Trophy, Flame, Calendar, CheckCircle2, Clock, Code2, Award, TrendingUp, Target, Zap } from "lucide-react";
+import { ChevronLeft, Trophy, Flame, Calendar, CheckCircle2, Clock, TrendingUp, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "submissions" | "stats">("overview");
 
 
   // Dynamic state
-  const [userData, setUserData] = useState<any>(null);
-  const [progress, setProgress] = useState<any[]>([]);
-  const [recentSubmissions, setRecentSubmissions] = useState<any[]>([]);
-  const [problemStats, setProblemStats] = useState<any>({
-    totalProblems: 0,
-    byDifficulty: [],
-  });
+  const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,24 +19,14 @@ export default function ProfilePage() {
       setLoading(true);
       setError(null);
       try {
-        const [userRes, progressRes, submissionsRes, statsRes] = await Promise.all([
-          fetch("/api/user/profile"),
-          fetch("/api/user/progress"),
-          fetch("/api/submissions?limit=10"),
-          fetch("/api/problems/stats"),
-        ]);
+        const response = await fetch("/api/user/dashboard");
+        const data = response.ok ? await response.json() : null;
 
-        const user = userRes.ok ? await userRes.json() : null;
-        const progressData = progressRes.ok ? await progressRes.json() : [];
-        const submissionsData = submissionsRes.ok ? await submissionsRes.json() : { data: [] };
-        const statsData = statsRes.ok
-          ? await statsRes.json()
-          : { totalProblems: 0, byDifficulty: [] };
+        if (!data) {
+          throw new Error("Missing profile payload");
+        }
 
-        setUserData(user);
-        setProgress(progressData);
-        setRecentSubmissions(submissionsData.data || []);
-        setProblemStats(statsData);
+        setProfileData(data);
 
       } catch (e) {
         setError("Failed to load profile data.");
@@ -55,15 +38,18 @@ export default function ProfilePage() {
   }, []);
 
   // Overall progress
-  const totalProblems = problemStats.totalProblems || 0;
-  const totalSolved = progress.filter((p) => p.status === "SOLVED").length;
+  const userData = profileData?.user || null;
+  const recentSubmissions = profileData?.recentSubmissions || [];
+
+  const totalProblems = profileData?.stats?.totalProblems || 0;
+  const totalSolved = profileData?.stats?.solvedProblems || 0;
   const completionPercentage = totalProblems > 0 ? Math.round((totalSolved / totalProblems) * 100) : 0;
 
-  const difficultyTotals = (problemStats.byDifficulty || []).reduce(
+  const difficultyTotals = (profileData?.problemsByDifficulty || []).reduce(
     (acc: { EASY: number; MEDIUM: number; HARD: number }, item: any) => {
       const key = item.difficulty as "EASY" | "MEDIUM" | "HARD";
       if (key && key in acc) {
-        acc[key] = item.total || 0;
+        acc[key] = item._count?._all || 0;
       }
       return acc;
     },
@@ -71,9 +57,9 @@ export default function ProfilePage() {
   );
 
   // Difficulty breakdown (dynamic)
-  const easy = progress.filter((p) => p.status === "SOLVED" && p.problem?.difficulty === "EASY").length;
-  const medium = progress.filter((p) => p.status === "SOLVED" && p.problem?.difficulty === "MEDIUM").length;
-  const hard = progress.filter((p) => p.status === "SOLVED" && p.problem?.difficulty === "HARD").length;
+  const easy = profileData?.solvedByDifficulty?.EASY || 0;
+  const medium = profileData?.solvedByDifficulty?.MEDIUM || 0;
+  const hard = profileData?.solvedByDifficulty?.HARD || 0;
 
 
   // Loading and error states
@@ -107,7 +93,7 @@ export default function ProfilePage() {
         <div className="mb-8 p-8 bg-card border border-border rounded-2xl">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-tr from-primary to-cyan-400 p-[2px]">
+              <div className="w-24 h-24 rounded-2xl bg-linear-to-tr from-primary to-cyan-400 p-0.5">
                 <div className="w-full h-full rounded-2xl bg-card flex items-center justify-center text-3xl font-bold text-foreground">
                   {userData?.name ? userData.name.split(' ').map((n: string) => n[0]).join('') : "U"}
                 </div>
@@ -309,15 +295,23 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Total Submissions</span>
-                    <span className="text-sm font-bold text-foreground">{recentSubmissions.length}</span>
+                    <span className="text-sm font-bold text-foreground">{profileData?.stats?.totalSubmissions ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Acceptance Rate</span>
-                    <span className="text-sm font-bold text-primary">85%</span>
+                    <span className="text-sm font-bold text-primary">{profileData?.stats?.successRate ?? 0}%</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Average Runtime</span>
-                    <span className="text-sm font-bold text-foreground">67ms</span>
+                    <span className="text-sm font-bold text-foreground">
+                      {Math.round(
+                        recentSubmissions.reduce(
+                          (acc: number, item: any) => acc + (item.executionTime || 0),
+                          0
+                        ) / (recentSubmissions.length || 1)
+                      )}
+                      ms
+                    </span>
                   </div>
                 </div>
               </div>
@@ -326,15 +320,15 @@ export default function ProfilePage() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Problems This Week</span>
-                    <span className="text-sm font-bold text-foreground">12</span>
+                    <span className="text-sm font-bold text-foreground">{profileData?.stats?.solvedThisWeek ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Problems This Month</span>
-                    <span className="text-sm font-bold text-foreground">28</span>
+                    <span className="text-sm font-bold text-foreground">{profileData?.stats?.solvedThisMonth ?? 0}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Most Active Day</span>
-                    <span className="text-sm font-bold text-foreground">Monday</span>
+                    <span className="text-sm font-bold text-foreground">-</span>
                   </div>
                 </div>
               </div>

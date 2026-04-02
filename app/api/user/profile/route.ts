@@ -7,7 +7,7 @@ export async function GET(request : Request){
     try {
         const session = await getServerSession(authOptions);
 
-        if(!session || !session.user?.email){
+    if(!session || !session.user?.id){
             return NextResponse.json(
                 {error : 'Unauthorized - Please login first'},
                 {status : 401}
@@ -15,7 +15,7 @@ export async function GET(request : Request){
         }
 
         const user = await prisma.user.findUnique({
-            where : {email : session.user.email},
+      where : {id : session.user.id},
             select:{
                 id:true,
                 email : true,
@@ -33,7 +33,11 @@ export async function GET(request : Request){
             );
         }
 
-        return NextResponse.json(user);
+        return NextResponse.json(user, {
+          headers: {
+            'Cache-Control': 'private, no-store',
+          },
+        });
 
 
 
@@ -51,7 +55,7 @@ export async function PUT(request: Request) {
 
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
         { status: 401 }
@@ -71,7 +75,7 @@ export async function PUT(request: Request) {
 
 
     const user = await prisma.user.update({
-      where: { email: session.user.email },
+      where: { id: session.user.id },
       data: {
         ...(name && { name }),    
         ...(image && { image }),  
@@ -86,7 +90,11 @@ export async function PUT(request: Request) {
       },
     });
 
-    return NextResponse.json(user);
+    return NextResponse.json(user, {
+      headers: {
+        'Cache-Control': 'private, no-store',
+      },
+    });
 
   } catch (error: any) {
     console.error('Update profile error:', error);

@@ -50,62 +50,47 @@ const sections = [
 ];
 
 export default function DashboardPage() {
-  const [progressData, setProgressData] = useState<any[]>([]);
-  const [problemStats, setProblemStats] = useState<any>({
-    totalProblems: 0,
-    byCategory: [],
-  });
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchAll() {
+    async function fetchDashboardData() {
       setLoading(true);
       try {
-        const [progressRes, statsRes] = await Promise.all([
-          fetch("/api/user/progress"),
-          fetch("/api/problems/stats")
-        ]);
-        const progress = progressRes.ok ? await progressRes.json() : [];
-        const stats = statsRes.ok
-          ? await statsRes.json()
-          : { totalProblems: 0, byCategory: [] };
-        
-        setProgressData(progress || []);
-        setProblemStats(stats);
+        const response = await fetch("/api/user/dashboard");
+        const data = response.ok ? await response.json() : null;
+        setDashboardData(data);
       } catch {
-        setProgressData([]);
-        setProblemStats({ totalProblems: 0, byCategory: [] });
+        setDashboardData(null);
       } finally {
         setLoading(false);
       }
     }
-    fetchAll();
+    fetchDashboardData();
   }, []);
 
   // Map: sectionName -> { total, solved }
   const sectionStats: Record<string, { total: number; solved: number }> = {};
-  if (Array.isArray(problemStats.byCategory)) {
-    problemStats.byCategory.forEach((bucket: any) => {
+  if (Array.isArray(dashboardData?.problemsByCategory)) {
+    dashboardData.problemsByCategory.forEach((bucket: any) => {
       const section = bucket.category || "Other";
       sectionStats[section] = {
-        total: bucket.total || 0,
+        total: bucket._count?._all || 0,
         solved: 0,
       };
     });
   }
-  progressData.forEach((p) => {
-    if (p.status === "SOLVED" && p.problem) {
-      const section = p.problem.category || p.problem.section || "Other";
-      if (!sectionStats[section]) {
-        sectionStats[section] = { total: 0, solved: 0 };
-      }
-      sectionStats[section].solved++;
+  const solvedByCategory = dashboardData?.solvedByCategory || {};
+  Object.keys(solvedByCategory).forEach((section) => {
+    if (!sectionStats[section]) {
+      sectionStats[section] = { total: 0, solved: 0 };
     }
+    sectionStats[section].solved = solvedByCategory[section] || 0;
   });
 
   // Overall progress
-  const totalProblems = problemStats.totalProblems || 0;
-  const totalCompleted = progressData.filter((p) => p.status === "SOLVED").length;
+  const totalProblems = dashboardData?.stats?.totalProblems || 0;
+  const totalCompleted = dashboardData?.stats?.solvedProblems || 0;
   const completionPercentage = totalProblems > 0 ? Math.round((totalCompleted / totalProblems) * 100) : 0;
 
   if (loading) {
@@ -209,7 +194,7 @@ export default function DashboardPage() {
                 className="h-full bg-primary transition-all duration-1000 ease-out relative" 
                 style={{ width: `${completionPercentage}%` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-full h-full -translate-x-full animate-[shimmer_2s_infinite]" />
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/20 to-transparent w-full h-full -translate-x-full animate-[shimmer_2s_infinite]" />
               </div>
             </div>
           </div>

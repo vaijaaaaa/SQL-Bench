@@ -6,20 +6,112 @@ import { prisma } from '@/lib/prisma';
 // GET /api/user/dashboard
 export async function GET(request: Request) {
   try {
-    // STEP 1: Get user session (must be logged in)
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized - Please login first' },
         { status: 401 }
       );
     }
 
-    // STEP 2: Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const userId = session.user.id;
+    const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [user, totalProblems, solvedProblems, attemptedProblems, totalSubmissions, successfulSubmissions, solvedThisWeek, solvedThisMonth, recentSubmissions, problemsByDifficulty, problemsByCategory, solvedRows, progressByDifficulty] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          createdAt: true,
+        },
+      }),
+      prisma.problem.count(),
+      prisma.userProgress.count({
+        where: {
+          userId,
+          status: 'SOLVED',
+        },
+      }),
+      prisma.userProgress.count({
+        where: {
+          userId,
+          status: 'ATTEMPTED',
+        },
+      }),
+      prisma.submission.count({
+        where: { userId },
+      }),
+      prisma.submission.count({
+        where: {
+          userId,
+          isCorrect: true,
+        },
+      }),
+      prisma.userProgress.count({
+        where: {
+          userId,
+          status: 'SOLVED',
+          solvedAt: {
+            gte: weekStart,
+          },
+        },
+      }),
+      prisma.userProgress.count({
+        where: {
+          userId,
+          status: 'SOLVED',
+          solvedAt: {
+            gte: monthStart,
+          },
+        },
+      }),
+      prisma.submission.findMany({
+        where: { userId },
+        include: {
+          problem: {
+            select: {
+              id: true,
+              title: true,
+              difficulty: true,
+            },
+          },
+        },
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.problem.groupBy({
+        by: ['difficulty'],
+        _count: true,
+      }),
+      prisma.problem.groupBy({
+        by: ['category'],
+        _count: true,
+      }),
+      prisma.userProgress.findMany({
+        where: {
+          userId,
+          status: 'SOLVED',
+        },
+        select: {
+          problem: {
+            select: {
+              category: true,
+              difficulty: true,
+            },
+          },
+        },
+      }),
+      prisma.userProgress.groupBy({
+        by: ['status'],
+        where: { userId },
+        _count: true,
+      }),
+    ]);
 
     if (!user) {
       return NextResponse.json(
@@ -28,74 +120,23 @@ export async function GET(request: Request) {
       );
     }
 
-    // STEP 3: Count total problems in system
-    const totalProblems = await prisma.problem.count();
-
-    // STEP 4: Count how many problems user SOLVED
-    const solvedProblems = await prisma.userProgress.count({
-      where: {
-        userId: user.id,
-        status: 'SOLVED',
-      },
-    });
-
-    // STEP 5: Count how many problems user ATTEMPTED (but didn't solve)
-    const attemptedProblems = await prisma.userProgress.count({
-      where: {
-        userId: user.id,
-        status: 'ATTEMPTED',
-      },
-    });
-
-    // STEP 6: Count total submissions by user
-    const totalSubmissions = await prisma.submission.count({
-      where: { userId: user.id },
-    });
-
-    // STEP 7: Count successful submissions (isCorrect = true)
-    const successfulSubmissions = await prisma.submission.count({
-      where: {
-        userId: user.id,
-        isCorrect: true,
-      },
-    });
-
-    // STEP 8: Calculate success rate percentage
     const successRate =
       totalSubmissions > 0
         ? ((successfulSubmissions / totalSubmissions) * 100).toFixed(1)
         : 0;
 
-    // STEP 9: Get recent 5 submissions with problem details
-    const recentSubmissions = await prisma.submission.findMany({
-      where: { userId: user.id },
-      include: {
-        problem: {
-          select: {
-            id: true,
-            title: true,
-            difficulty: true,
-          },
-        },
-      },
-      take: 5,
-      orderBy: { createdAt: 'desc' }, // Newest first
-    });
+    const solvedByCategory = solvedRows.reduce<Record<string, number>>((acc, row) => {
+      const category = row.problem?.category || 'Other';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
 
-    // STEP 10: Get progress breakdown by difficulty
-    const problemsByDifficulty = await prisma.problem.groupBy({
-      by: ['difficulty'],
-      _count: true, // Count how many problems per difficulty
-    });
+    const solvedByDifficulty = solvedRows.reduce<Record<string, number>>((acc, row) => {
+      const difficulty = row.problem?.difficulty || 'EASY';
+      acc[difficulty] = (acc[difficulty] || 0) + 1;
+      return acc;
+    }, {});
 
-    // STEP 11: Get user's progress by difficulty
-    const progressByDifficulty = await prisma.userProgress.groupBy({
-      by: ['status'],
-      where: { userId: user.id },
-      _count: true, // Count how many in each status
-    });
-
-    // STEP 12: Return comprehensive dashboard data
     return NextResponse.json({
       user: {
         id: user.id,
@@ -110,10 +151,15 @@ export async function GET(request: Request) {
         totalSubmissions,                           // Total submissions made
         successfulSubmissions,                      // Correct submissions
         successRate,                                // Success percentage
+        solvedThisWeek,
+        solvedThisMonth,
       },
       recentSubmissions,                           // Last 5 submissions
       problemsByDifficulty,                        // How many EASY/MEDIUM/HARD exist
+      problemsByCategory,
       progressByDifficulty,                        // Your progress distribution
+      solvedByCategory,
+      solvedByDifficulty,
     });
 
   } catch (error: any) {
