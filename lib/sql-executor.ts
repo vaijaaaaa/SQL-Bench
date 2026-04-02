@@ -2,6 +2,10 @@ import { Pool, PoolClient } from "pg";
 import { logger } from "./logger";
 import { env } from "./env";
 
+const globalForPgPool = globalThis as unknown as {
+    sqlExecutorPool: Pool | undefined;
+};
+
 interface ExecutionResult {
     success: boolean;
     rows?: any[];
@@ -9,13 +13,26 @@ interface ExecutionResult {
     executionTime: number;
 }
 
-// Create connection pool for better performance
-const pool = new Pool({
-    connectionString: env.DATABASE_URL,
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-});
+// In serverless environments, conservative pool sizes avoid exhausting
+// session-mode poolers (e.g., MaxClientsInSessionMode errors).
+const poolMax = Number.parseInt(process.env.DB_POOL_MAX || (env.isProduction ? "1" : "5"), 10);
+const poolIdleTimeoutMs = Number.parseInt(process.env.DB_POOL_IDLE_TIMEOUT_MS || "10000", 10);
+const poolConnectionTimeoutMs = Number.parseInt(process.env.DB_POOL_CONNECTION_TIMEOUT_MS || "10000", 10);
+const sqlExecutorConnectionString = process.env.SQL_EXECUTOR_DATABASE_URL || env.DATABASE_URL;
+
+const pool =
+    globalForPgPool.sqlExecutorPool ??
+    new Pool({
+        connectionString: sqlExecutorConnectionString,
+        max: Number.isNaN(poolMax) ? 1 : poolMax,
+        idleTimeoutMillis: Number.isNaN(poolIdleTimeoutMs) ? 10000 : poolIdleTimeoutMs,
+        connectionTimeoutMillis: Number.isNaN(poolConnectionTimeoutMs) ? 10000 : poolConnectionTimeoutMs,
+        allowExitOnIdle: true,
+    });
+
+if (!globalForPgPool.sqlExecutorPool) {
+    globalForPgPool.sqlExecutorPool = pool;
+}
 
 // SQL Injection prevention - more comprehensive keyword list
 const DANGEROUS_KEYWORDS = [
