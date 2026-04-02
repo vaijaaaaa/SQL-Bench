@@ -178,6 +178,3 @@ export async function validateSubmission(
     executionTime: totalExecutionTime,
   };
 }
-    executionTime: totalExecutionTime,
-  };
-}
