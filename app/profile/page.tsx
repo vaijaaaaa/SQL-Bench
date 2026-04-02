@@ -5,6 +5,22 @@ import Link from "next/link";
 import { ChevronLeft, Trophy, Flame, Calendar, CheckCircle2, Clock, TrendingUp, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+type RecentSubmission = {
+  id: string;
+  createdAt?: string | Date | null;
+  executionTime?: number | null;
+  runtime?: number | string | null;
+  status?: string | null;
+  verdict?: string | null;
+  time?: string | null;
+  title?: string | null;
+  difficulty?: string | null;
+  problem?: {
+    title?: string | null;
+    difficulty?: string | null;
+  } | null;
+};
+
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<"overview" | "submissions" | "stats">("overview");
 
@@ -39,7 +55,7 @@ export default function ProfilePage() {
 
   // Overall progress
   const userData = profileData?.user || null;
-  const recentSubmissions = profileData?.recentSubmissions || [];
+  const recentSubmissions: RecentSubmission[] = profileData?.recentSubmissions || [];
 
   const totalProblems = profileData?.stats?.totalProblems || 0;
   const totalSolved = profileData?.stats?.solvedProblems || 0;
