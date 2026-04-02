@@ -54,11 +54,12 @@ export default function ProblemList({
       try {
         const res = await fetch('/api/user/progress?limit=500');
         if (res.ok) {
-          const data = await res.json();
-          const solvedIds = new Set(
+          const data: Array<{ status?: string; problemId?: string }> = await res.json();
+          const solvedIds = new Set<string>(
             (data || [])
-              .filter((p: any) => p.status === 'SOLVED')
-              .map((p: any) => p.problemId)
+              .filter((progress) => progress.status === 'SOLVED')
+              .map((progress) => progress.problemId)
+              .filter((problemId): problemId is string => Boolean(problemId))
           );
           setSolvedProblemIds(solvedIds);
         }
