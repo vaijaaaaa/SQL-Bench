@@ -317,7 +317,7 @@ export default function Home() {
             <span className="font-bold text-foreground tracking-tight">SQL-Bench</span>
           </div>
           <div className="text-muted-foreground text-sm">
-            © 2025 SQL-Bench. Built for developers.
+            © 2026 SQL-Bench. Built for developers.
           </div>
           <div className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <Link href="/problems" className="hover:text-foreground transition-colors">Problems</Link>
